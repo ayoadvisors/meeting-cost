@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "Meeting Cost",
+  "version": "1.0.0",
+  "description": "Shows the combined hourly cost of everyone in a meeting, live and rising, inside Google Calendar and Outlook on the web.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "permissions": ["storage"],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://calendar.google.com/*",
+        "https://outlook.office.com/*",
+        "https://outlook.office365.com/*",
+        "https://outlook.live.com/*",
+        "https://outlook.cloud.microsoft/*"
+      ],
+      "js": [
+        "src/vendor/meeting-cost-core.js",
+        "src/content/extract.js",
+        "src/content/widget.js",
+        "src/content/main.js"
+      ],
+      "css": ["src/content/widget.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "src/background.js",
+    "scripts": ["src/background.js"]
+  },
+  "action": {
+    "default_title": "Meeting Cost: set hourly rates",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    }
+  },
+  "options_ui": {
+    "page": "src/options/options.html",
+    "open_in_tab": true
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "meeting-cost@example.com",
+      "strict_min_version": "121.0"
+    }
+  }
+}

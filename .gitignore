@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.zip
+.clasp.json
+.DS_Store
+Thumbs.db
+.claude/

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meeting Cost demo (Outlook)</title>
+<style>
+  body { margin: 0; padding: 24px 16px; background: #f5f5f5; color: #242424; font-family: "Segoe UI", system-ui, sans-serif; font-size: 14px; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+  .lede { color: #616161; margin: 0 0 16px; }
+  .pane { background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.14); max-width: 520px; padding: 16px 20px; }
+  .subject { font-size: 20px; font-weight: 600; margin: 0 0 6px; }
+  .when { color: #424242; margin-bottom: 12px; }
+  .section { margin-top: 14px; }
+  .section h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .3px; color: #616161; margin: 0 0 6px; }
+  .persona { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+  .persona img { width: 28px; height: 28px; border-radius: 50%; background: #c7e0f4; }
+  .persona .txt { display: flex; flex-direction: column; }
+  .persona .sub { color: #616161; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Meeting Cost demo, Outlook flavour</h1>
+  <p class="lede">A rough stand-in for an Outlook on the web event reading pane. Guests here expose their e-mail only through <code>title</code> attributes and the date uses Outlook's <code>Thu 2/2/2023 11:00 AM - 12:00 PM</code> format, which exercises the extension's generic extraction path.</p>
+
+  <div class="pane" role="main">
+    <h2 class="subject">Marketing Sync</h2>
+    <div class="when" id="when">Thu 2/2/2023 11:00 AM - 12:00 PM</div>
+    <div>Microsoft Teams meeting</div>
+
+    <div class="section">
+      <h3>Organizer</h3>
+      <div class="persona" title="John Smith <john.smith@acme.com>"><img alt=""><div class="txt"><span>John Smith</span><span class="sub">Organizer</span></div></div>
+    </div>
+
+    <div class="section">
+      <h3>Required</h3>
+      <div class="persona" title="Olivia Jones <olivia.jones@acme.com>"><img alt=""><div class="txt"><span>Olivia Jones</span><span class="sub">Accepted</span></div></div>
+      <div class="persona" title="Justin Mendel <justin.mendel@acme.com>"><img alt=""><div class="txt"><span>Justin Mendel</span><span class="sub">No response</span></div></div>
+      <div class="persona" title="Vera Katts <vera.katts@acme.com>"><img alt=""><div class="txt"><span>Vera Katts</span><span class="sub">Accepted</span></div></div>
+    </div>
+
+    <div class="section">
+      <h3>Optional</h3>
+      <div class="persona" title="Alex Jones <alex.jones@acme.com>"><img alt=""><div class="txt"><span>Alex Jones</span><span class="sub">Tentative</span></div></div>
+      <div class="persona" title="Sam Lee <sam.lee@acme.com>"><img alt=""><div class="txt"><span>Sam Lee</span><span class="sub">Declined</span></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  window.MC_DEMO_PROVIDER = 'outlook';
+  window.MC_DEMO_CONFIG = {
+    tickSeconds: 1,
+    rates: {
+      'john.smith@acme.com': 144.23, 'olivia.jones@acme.com': 144.23, 'justin.mendel@acme.com': 84.3,
+      'vera.katts@acme.com': 120.19, 'alex.jones@acme.com': 110.3, 'sam.lee@acme.com': 99
+    }
+  };
+  (function () {
+    var now = new Date();
+    var start = new Date(now - 12 * 60000), end = new Date(now.getTime() + 48 * 60000);
+    function t(d) { var h = d.getHours(), m = d.getMinutes(); return ((h % 12) || 12) + ':' + (m < 10 ? '0' : '') + m + ' ' + (h < 12 ? 'AM' : 'PM'); }
+    var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    document.getElementById('when').textContent = days[start.getDay()] + ' ' + (start.getMonth() + 1) + '/' + start.getDate() + '/' + start.getFullYear() + ' ' + t(start) + ' - ' + t(end);
+  })();
+</script>
+<link rel="stylesheet" href="../packages/browser-extension/src/content/widget.css">
+<script src="../packages/browser-extension/src/vendor/meeting-cost-core.js"></script>
+<script src="../packages/browser-extension/src/content/extract.js"></script>
+<script src="../packages/browser-extension/src/content/widget.js"></script>
+<script src="../packages/browser-extension/src/content/main.js"></script>
+</body>
+</html>

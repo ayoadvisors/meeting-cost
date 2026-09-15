@@ -1,0 +1,275 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const core = require('../src/meeting-cost-core.js');
+
+// The exact numbers from the LinkedIn post: five people, 11:00-12:00.
+const POST_RATES = {
+  'john.smith@acme.com': { hourly: 144.23 },
+  'olivia.jones@acme.com': { hourly: 144.23 },
+  'justin.mendel@acme.com': { hourly: 84.3 },
+  'vera.katts@acme.com': { hourly: 120.19 },
+  'alex.jones@acme.com': { hourly: 110.3 }
+};
+
+const POST_ATTENDEES = [
+  { email: 'john.smith@acme.com', name: 'John Smith', status: 'accepted', organizer: true },
+  { email: 'olivia.jones@acme.com', name: 'Olivia Jones', status: 'accepted' },
+  { email: 'justin.mendel@acme.com', name: 'Justin Mendel', status: 'needsAction' },
+  { email: 'vera.katts@acme.com', name: 'Vera Katts', status: 'accepted' },
+  { email: 'alex.jones@acme.com', name: 'Alex Jones', status: 'tentative' }
+];
+
+const START = new Date(2023, 1, 2, 11, 0, 0);
+const END = new Date(2023, 1, 2, 12, 0, 0);
+const CONFIG = { currency: 'USD', locale: 'en-US', rates: POST_RATES };
+
+function at(minutesFromStart) {
+  return new Date(START.getTime() + minutesFromStart * 60000);
+}
+
+test('normalizeConfig coerces types, lower-cases keys and accepts rate text', () => {
+  const cfg = core.normalizeConfig({
+    currency: 'eur',
+    defaultHourlyRate: '$1,250.50',
+    hoursPerYear: '1950',
+    overheadMultiplier: '1.3',
+    includeDeclined: 'true',
+    tickSeconds: '0',
+    rates: { 'Bob@Acme.com': 120, '@Acme.com': { salary: '208,000' }, junk: null }
+  });
+  assert.equal(cfg.currency, 'EUR');
+  assert.equal(cfg.defaultHourlyRate, 1250.5);
+  assert.equal(cfg.hoursPerYear, 1950);
+  assert.equal(cfg.overheadMultiplier, 1.3);
+  assert.equal(cfg.includeDeclined, true);
+  assert.equal(cfg.tickSeconds, 1, 'tick is clamped to at least one second');
+  assert.deepEqual(cfg.rates, { 'bob@acme.com': { hourly: 120 }, '@acme.com': { salary: 208000 } });
+
+  const fromText = core.normalizeConfig({ rates: 'a@b.com = 50/hr' });
+  assert.deepEqual(fromText.rates, { 'a@b.com': { hourly: 50 } });
+
+  const bad = core.normalizeConfig({ currency: 'dollars', defaultHourlyRate: 'abc' });
+  assert.equal(bad.currency, 'USD');
+  assert.equal(bad.defaultHourlyRate, 100);
+});
+
+test('resolveRate prefers exact email, then domain, then default; salaries convert', () => {
+  const cfg = core.normalizeConfig({
+    defaultHourlyRate: 80,
+    hoursPerYear: 2000,
+    rates: { 'ceo@acme.com': { salary: 400000 }, '@acme.com': { hourly: 95 } }
+  });
+  assert.deepEqual(core.resolveRate('CEO@acme.com', cfg), { baseHourly: 200, hourly: 200, source: 'exact' });
+  assert.deepEqual(core.resolveRate('dev@acme.com', cfg), { baseHourly: 95, hourly: 95, source: 'domain' });
+  assert.deepEqual(core.resolveRate('x@other.io', cfg), { baseHourly: 80, hourly: 80, source: 'default' });
+  assert.deepEqual(core.resolveRate('', cfg), { baseHourly: 80, hourly: 80, source: 'default' });
+
+  const loaded = core.normalizeConfig({ defaultHourlyRate: 100, overheadMultiplier: 1.4 });
+  const r = core.resolveRate('anyone@x.com', loaded);
+  assert.equal(r.baseHourly, 100);
+  assert.ok(Math.abs(r.hourly - 140) < 1e-9);
+});
+
+test('normalizeStatus understands API values and UI words', () => {
+  assert.equal(core.normalizeStatus('accepted'), 'accepted');
+  assert.equal(core.normalizeStatus('needsAction'), 'pending');
+  assert.equal(core.normalizeStatus('notResponded'), 'pending');
+  assert.equal(core.normalizeStatus('Awaiting'), 'pending');
+  assert.equal(core.normalizeStatus('tentative'), 'tentative');
+  assert.equal(core.normalizeStatus('Declined'), 'declined');
+  assert.equal(core.normalizeStatus('organizer'), 'accepted');
+  assert.equal(core.normalizeStatus('Yes'), 'accepted');
+  assert.equal(core.normalizeStatus(undefined), 'unknown');
+  assert.equal(core.normalizeStatus('whatever'), 'unknown');
+});
+
+test('normalizeAttendees de-duplicates and invents names from emails', () => {
+  const list = core.normalizeAttendees([
+    { email: 'John.Smith@acme.com', name: 'John Smith' },
+    { email: 'john.smith@acme.com', name: 'Dup' },
+    { emailAddress: 'olivia.jones@acme.com', displayName: '' },
+    { email: 'room-4@resource.calendar.google.com', name: 'Room 4', resource: true },
+    { emailAddress: 'proj@acme.com', displayName: 'Projector', recipientType: 'room' },
+    null,
+    { name: '' }
+  ]);
+  assert.equal(list.length, 4);
+  assert.equal(list[0].email, 'john.smith@acme.com');
+  assert.equal(list[0].name, 'John Smith');
+  assert.equal(list[1].name, 'Olivia Jones');
+  assert.equal(list[2].resource, true);
+  assert.equal(list[3].resource, true, 'recipientType "room" marks a resource');
+});
+
+test('computeMeeting reproduces the $603.25 from the post before the meeting', () => {
+  const r = core.computeMeeting({ attendees: POST_ATTENDEES, start: START, end: END, config: CONFIG, now: at(-120) });
+  assert.equal(r.phase, 'upcoming');
+  assert.equal(r.countedPeople, 5);
+  assert.ok(Math.abs(r.combinedHourlyRate - 603.25) < 1e-9);
+  assert.ok(Math.abs(r.scheduledCost - 603.25) < 1e-9);
+  assert.equal(r.headline, '$603.25');
+  assert.equal(r.label, 'cost of meeting');
+  assert.equal(r.durationMinutes, 60);
+  assert.equal(r.startsInMinutes, 120);
+  assert.equal(r.subtitle, '5 people · $603.25/hr · 1 hr');
+  assert.equal(r.people[0].hourlyRate, 144.23);
+  assert.equal(r.people[0].rateSource, 'exact');
+});
+
+test('computeMeeting rises during the meeting and keeps rising while it runs over', () => {
+  const live = core.computeMeeting({ attendees: POST_ATTENDEES, start: START, end: END, config: CONFIG, now: at(30) });
+  assert.equal(live.phase, 'live');
+  assert.equal(live.isRunning, true);
+  assert.ok(Math.abs(live.liveCost - 301.625) < 1e-9);
+  assert.equal(live.headline, '$301.63');
+  assert.equal(live.label, 'and rising');
+  assert.match(live.subtitle, /\$10\.05 per minute · 30 min in/);
+
+  const over = core.computeMeeting({ attendees: POST_ATTENDEES, start: START, end: END, config: CONFIG, now: at(70) });
+  assert.equal(over.phase, 'overrun');
+  assert.equal(over.overrunMinutes, 10);
+  assert.ok(Math.abs(over.liveCost - (603.25 + 10 * 603.25 / 60)) < 1e-9);
+  assert.equal(over.headline, '$703.79');
+  assert.equal(over.label, 'and rising · 10 min over');
+
+  const ended = core.computeMeeting({ attendees: POST_ATTENDEES, start: START, end: END, config: CONFIG, now: at(60 + 61) });
+  assert.equal(ended.phase, 'ended');
+  assert.equal(ended.headline, '$603.25');
+  assert.equal(ended.label, 'cost of meeting');
+});
+
+test('computeMeeting honours includeDeclined and includeResources', () => {
+  const attendees = POST_ATTENDEES.concat([
+    { email: 'sam@acme.com', name: 'Sam', status: 'declined' },
+    { email: 'room@resource.calendar.google.com', name: 'Room 12', resource: true }
+  ]);
+  const cfg = Object.assign({}, CONFIG, { defaultHourlyRate: 60 });
+  const base = core.computeMeeting({ attendees, start: START, end: END, config: cfg, now: at(-1) });
+  assert.equal(base.countedPeople, 5);
+  assert.equal(base.people.length, 7);
+  assert.equal(base.people[5].counted, false);
+  assert.equal(base.people[6].counted, false);
+
+  const all = core.computeMeeting({
+    attendees, start: START, end: END, now: at(-1),
+    config: Object.assign({}, cfg, { includeDeclined: true, includeResources: true })
+  });
+  assert.equal(all.countedPeople, 7);
+  assert.ok(Math.abs(all.combinedHourlyRate - (603.25 + 120)) < 1e-9);
+});
+
+test('computeMeeting copes with missing or nonsensical times', () => {
+  const r = core.computeMeeting({ attendees: POST_ATTENDEES, config: CONFIG });
+  assert.equal(r.phase, 'unknown');
+  assert.equal(r.scheduledCost, 0);
+  assert.equal(r.headline, '$0.00');
+  assert.ok(Math.abs(r.combinedHourlyRate - 603.25) < 1e-9, 'the burn rate is still useful');
+
+  const backwards = core.computeMeeting({ attendees: POST_ATTENDEES, start: END, end: START, config: CONFIG });
+  assert.equal(backwards.phase, 'unknown');
+  assert.equal(backwards.durationMinutes, 0);
+});
+
+test('formatMoney and formatDuration', () => {
+  const usd = core.normalizeConfig({ currency: 'USD', locale: 'en-US' });
+  assert.equal(core.formatMoney(1234.5, usd), '$1,234.50');
+  assert.equal(core.formatMoney(NaN, usd), '$0.00');
+  const eur = core.normalizeConfig({ currency: 'EUR', locale: 'de-DE' });
+  assert.match(core.formatMoney(1234.5, eur), /1\.234,50/);
+  assert.equal(core.formatDuration(45), '45 min');
+  assert.equal(core.formatDuration(60), '1 hr');
+  assert.equal(core.formatDuration(90), '1 hr 30 min');
+  assert.equal(core.formatDuration(120), '2 hrs');
+});
+
+test('parseRateLines accepts the documented syntax and reports bad lines', () => {
+  const text = [
+    '# team',
+    'john@acme.com = 144.23/hr',
+    'Olivia@acme.com: $300,000 / yr',
+    '@acme.com = 95',
+    '@partner.io = 180k per year',
+    'cfo@acme.com = 250 hourly',
+    '',
+    'this is not a rate',
+    'bob@acme.com = 12/fortnight',
+    'noatsign = 10'
+  ].join('\n');
+  const { rates, errors } = core.parseRateLines(text);
+  assert.deepEqual(rates, {
+    'john@acme.com': { hourly: 144.23 },
+    'olivia@acme.com': { salary: 300000 },
+    '@acme.com': { hourly: 95 },
+    '@partner.io': { salary: 180000 },
+    'cfo@acme.com': { hourly: 250 }
+  });
+  assert.deepEqual(errors.map(e => e.line), [8, 9, 10]);
+  assert.match(errors[1].message, /Unknown unit/);
+});
+
+test('serializeRateLines round-trips through parseRateLines', () => {
+  const rates = { 'b@x.com': { salary: 120000 }, 'a@x.com': { hourly: 55.5 }, '@x.com': { hourly: 40 } };
+  const text = core.serializeRateLines(rates);
+  assert.equal(text, '@x.com = 40/hr\na@x.com = 55.5/hr\nb@x.com = 120000/yr');
+  assert.deepEqual(core.parseRateLines(text).rates, rates);
+});
+
+test('buildEmailDraft addresses everyone but me and the rooms, and compose URLs encode it', () => {
+  const attendees = POST_ATTENDEES.concat([
+    { email: 'me@acme.com', name: 'Me', self: true },
+    { email: 'room@resource.calendar.google.com', name: 'Room', resource: true }
+  ]);
+  const computed = core.computeMeeting({ attendees, start: START, end: END, config: CONFIG, now: at(-5) });
+  const draft = core.buildEmailDraft({ title: 'Marketing Sync', computed });
+  assert.deepEqual(draft.to, POST_ATTENDEES.map(a => a.email));
+  assert.equal(draft.subject, 'Re: Marketing Sync (can we do this over email?)');
+  // "me" is counted too: my hour costs money even if I am not on the To: line.
+  assert.match(draft.body, /booked for 1 hr with 6 people at a combined \$703\.25\/hour, about \$703\.25 of our time/);
+
+  const gmail = core.composeUrl.gmail(draft);
+  assert.ok(gmail.startsWith('https://mail.google.com/mail/?view=cm&fs=1&to=john.smith%40acme.com%2C'));
+  assert.match(gmail, /&su=Re%3A%20Marketing%20Sync/);
+
+  const outlook = core.composeUrl.outlook(draft);
+  assert.ok(outlook.startsWith('https://outlook.office.com/mail/deeplink/compose?to=john.smith%40acme.com%3B'));
+  assert.ok(core.composeUrl.outlook(draft, 'live').startsWith('https://outlook.live.com/mail/0/deeplink/compose?'));
+
+  const mailto = core.composeUrl.mailto(draft);
+  assert.ok(mailto.startsWith('mailto:john.smith@acme.com,olivia.jones@acme.com'));
+
+  const noTimes = core.buildEmailDraft({ title: '', attendees: POST_ATTENDEES, config: CONFIG });
+  assert.equal(noTimes.subject, 'Re: our meeting (can we do this over email?)');
+  assert.match(noTimes.body, /Rather than meeting about "our meeting"/);
+});
+
+test('createTicker fires now, aligns to the next boundary, then repeats; stop clears everything', () => {
+  const calls = [];
+  let clock = 1000 * 60 * 10 + 15000; // 10 min 15 s past some epoch minute
+  const timeouts = [];
+  const intervals = [];
+  const timers = {
+    now: () => clock,
+    setTimeout: (f, ms) => { timeouts.push({ f, ms }); return 't' + timeouts.length; },
+    clearTimeout: (id) => { timeouts.cleared = (timeouts.cleared || []).concat(id); },
+    setInterval: (f, ms) => { intervals.push({ f, ms }); return 'i' + intervals.length; },
+    clearInterval: (id) => { intervals.cleared = (intervals.cleared || []).concat(id); }
+  };
+  const ticker = core.createTicker(() => calls.push(clock), 60, timers);
+  assert.equal(calls.length, 1, 'fires immediately');
+  assert.equal(timeouts[0].ms, 45000, 'waits until the next whole minute');
+
+  clock += 45000;
+  timeouts[0].f();
+  assert.equal(calls.length, 2, 'fires on the minute boundary');
+  assert.equal(intervals[0].ms, 60000, 'then every minute');
+
+  intervals[0].f();
+  assert.equal(calls.length, 3);
+
+  ticker.stop();
+  intervals[0].f();
+  assert.equal(calls.length, 3, 'no calls after stop');
+  assert.deepEqual(timeouts.cleared, ['t1']);
+  assert.deepEqual(intervals.cleared, ['i1']);
+});

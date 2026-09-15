@@ -1,0 +1,35 @@
+{
+  "timeZone": "America/New_York",
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "dependencies": {
+    "enabledAdvancedServices": [
+      { "userSymbol": "Calendar", "version": "v3", "serviceId": "calendar" }
+    ]
+  },
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/calendar.addons.execute",
+    "https://www.googleapis.com/auth/calendar.addons.current.event.read",
+    "https://www.googleapis.com/auth/calendar.events.readonly"
+  ],
+  "addOns": {
+    "common": {
+      "name": "Meeting Cost",
+      "logoUrl": "https://www.gstatic.com/images/icons/material/system/1x/paid_black_48dp.png",
+      "layoutProperties": {
+        "primaryColor": "#188038",
+        "secondaryColor": "#1a73e8"
+      },
+      "homepageTrigger": { "runFunction": "onHomepage", "enabled": true },
+      "universalActions": [
+        { "label": "Set hourly rates", "runFunction": "onOpenSettings" }
+      ]
+    },
+    "calendar": {
+      "homepageTrigger": { "runFunction": "onHomepage", "enabled": true },
+      "eventOpenTrigger": { "runFunction": "onEventOpen" },
+      "eventUpdateTrigger": { "runFunction": "onEventOpen" },
+      "currentEventAccess": "READ"
+    }
+  }
+}

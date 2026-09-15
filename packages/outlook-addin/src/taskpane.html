@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meeting Cost</title>
+  <link rel="stylesheet" href="taskpane.css">
+  <!-- Office.js must load first and from Microsoft's CDN (store requirement). -->
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+</head>
+<body>
+  <main id="app" class="app" hidden>
+    <section class="cost" id="costSection">
+      <div class="headline">
+        <span class="icon" aria-hidden="true">$</span>
+        <span class="amount" id="amount">&hellip;</span>
+        <span class="label" id="label">cost of meeting</span>
+      </div>
+      <div class="sub" id="subtitle"></div>
+      <p class="note" id="note" hidden></p>
+      <div class="actions">
+        <button type="button" class="primary" id="emailInstead">Send an Email Instead</button>
+        <button type="button" class="ghost" id="toggleSettings" aria-expanded="false" aria-controls="settings">Set hourly rates</button>
+      </div>
+    </section>
+
+    <section class="guests">
+      <h2>Guests</h2>
+      <ul id="guests" class="guest-list"></ul>
+    </section>
+
+    <section class="settings" id="settings" hidden>
+      <h2>Hourly rates</h2>
+      <p class="muted">Saved to your mailbox settings, so they follow you to every Outlook. Nothing is sent anywhere else.</p>
+      <form id="settingsForm">
+        <div class="grid">
+          <label>Default hourly rate
+            <input type="number" id="defaultHourlyRate" min="0" step="0.01">
+          </label>
+          <label>Currency
+            <input type="text" id="currency" maxlength="3" pattern="[A-Za-z]{3}">
+          </label>
+          <label>Hours per year
+            <input type="number" id="hoursPerYear" min="1" step="1">
+          </label>
+          <label>Overhead multiplier
+            <input type="number" id="overheadMultiplier" min="0" step="0.05">
+          </label>
+          <label>Refresh every
+            <select id="tickSeconds">
+              <option value="60">minute</option>
+              <option value="10">10 seconds</option>
+              <option value="1">second</option>
+            </select>
+          </label>
+          <label>Overrun grace (min)
+            <input type="number" id="overrunGraceMinutes" min="0" step="1">
+          </label>
+        </div>
+        <label class="check"><input type="checkbox" id="includeDeclined"> Count guests who declined</label>
+        <label class="check"><input type="checkbox" id="includeResources"> Count rooms and resources</label>
+        <label>Rates by person or domain
+          <textarea id="rates" spellcheck="false" placeholder="john.smith@acme.com = 144.23/hr
+olivia.jones@acme.com = 300000/yr
+@acme.com = 95"></textarea>
+        </label>
+        <p class="error" id="errors" role="alert"></p>
+        <div class="actions">
+          <button type="submit" class="primary">Save</button>
+          <span class="muted" id="status" role="status"></span>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <div id="unsupported" class="unsupported" hidden>
+    <p>Open this add-in from a calendar event in Outlook.</p>
+  </div>
+
+  <script src="meeting-cost-core.js"></script>
+  <script src="taskpane.js"></script>
+</body>
+</html>

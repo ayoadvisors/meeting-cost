@@ -1,0 +1,12 @@
+{
+  "name": "meeting-cost-outlook-addin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Meeting Cost task pane add-in for Outlook (Windows, Mac, web, mobile).",
+  "scripts": {
+    "certs": "npx office-addin-dev-certs install",
+    "start": "node serve.js",
+    "validate": "npx office-addin-manifest validate manifest.xml",
+    "sideload": "npx office-addin-debugging start manifest.xml"
+  }
+}

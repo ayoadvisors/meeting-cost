@@ -1,0 +1,67 @@
+/* Meeting Cost — Outlook task pane (Fluent-flavoured, no framework) */
+
+:root { color-scheme: light dark; }
+
+body {
+  margin: 0;
+  padding: 12px 14px 24px;
+  font: 14px/1.45 "Segoe UI", "Segoe UI Web (West European)", system-ui, -apple-system, sans-serif;
+  color: #242424;
+  background: #fff;
+}
+
+h2 { font-size: 13px; font-weight: 600; margin: 18px 0 6px; color: #616161; text-transform: uppercase; letter-spacing: .3px; }
+.muted { color: #616161; font-size: 12px; }
+
+.headline { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.icon { color: #616161; font-weight: 700; font-size: 18px; }
+.amount { color: #c50f1f; font-weight: 700; font-size: 26px; font-variant-numeric: tabular-nums; }
+.label { color: #c50f1f; font-weight: 600; }
+.sub { color: #616161; font-size: 12px; margin-top: 2px; }
+.note { color: #616161; font-size: 12px; margin: 8px 0 0; }
+
+.live .amount::before {
+  content: ''; display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+  background: #c50f1f; margin-right: 8px; vertical-align: 3px; animation: pulse 1.2s ease-in-out infinite;
+}
+.over .label { text-decoration: underline wavy #c50f1f; text-underline-offset: 3px; }
+@keyframes pulse { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+
+.actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+button {
+  font: inherit; font-weight: 600; border-radius: 4px; padding: 7px 14px; cursor: pointer;
+  border: 1px solid transparent;
+}
+button.primary { background: #0f6cbd; color: #fff; }
+button.primary:hover { background: #115ea3; }
+button.ghost { background: transparent; color: #0f6cbd; border-color: #d1d1d1; }
+button.ghost:hover { background: #f5f5f5; }
+
+.guest-list { list-style: none; padding: 0; margin: 0; }
+.guest-list li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid #f0f0f0; }
+.guest-list .name { font-weight: 500; }
+.guest-list .rate { color: #616161; font-size: 12px; text-align: right; }
+
+.settings { border-top: 1px solid #e0e0e0; margin-top: 16px; padding-top: 4px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+label { display: block; font-size: 12px; color: #424242; font-weight: 500; }
+label.check { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-weight: 400; }
+input[type="text"], input[type="number"], select, textarea {
+  width: 100%; box-sizing: border-box; margin-top: 3px; padding: 6px 8px; font: inherit;
+  border: 1px solid #d1d1d1; border-radius: 4px; background: inherit; color: inherit;
+}
+textarea { min-height: 120px; font-family: Consolas, "Cascadia Mono", ui-monospace, monospace; white-space: pre; margin-top: 10px; }
+.error { color: #c50f1f; white-space: pre-line; font-size: 12px; min-height: 1em; margin: 6px 0 0; }
+.unsupported { padding: 24px 12px; color: #616161; }
+
+@media (prefers-color-scheme: dark) {
+  body { background: #1f1f1f; color: #f0f0f0; }
+  h2, .muted, .sub, .note, .icon, .guest-list .rate, label { color: #adadad; }
+  .amount, .label, .error { color: #ff7a85; }
+  .live .amount::before { background: #ff7a85; }
+  .guest-list li { border-color: #333; }
+  .settings { border-color: #333; }
+  input, select, textarea, button.ghost { border-color: #555; }
+  button.ghost { color: #7cb6ff; }
+  button.ghost:hover { background: #2a2a2a; }
+}
