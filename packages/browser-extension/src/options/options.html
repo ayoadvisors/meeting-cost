@@ -96,13 +96,14 @@
 
       <fieldset>
         <legend>Rates by person or domain</legend>
-        <label for="rates">One per line: <code>email = amount/hr</code>, <code>email = amount/yr</code>, or <code>@domain = amount</code>
-          <small>Exact e-mail wins over <code>@domain</code>, which wins over the default. <code>180k/yr</code> works too. Lines starting with <code>#</code> are comments.</small>
+        <label for="rates">One per line: <code>email = amount/hr</code>, <code>email = amount/yr</code>, <code>@domain = amount</code>, or <code>Full Name = amount/hr</code>
+          <small>Exact e-mail wins over a name, which wins over <code>@domain</code>, which wins over the default. Use names for Outlook on the web, which shows people without addresses. <code>180k/yr</code> works too. Lines starting with <code>#</code> are comments.</small>
         </label>
         <textarea id="rates" spellcheck="false" placeholder="john.smith@acme.com = 144.23/hr
 olivia.jones@acme.com = 300000/yr
 @acme.com = 95
-@partner.io = 180k/yr"></textarea>
+@partner.io = 180k/yr
+Vera Katts = 120.19/hr"></textarea>
         <p id="errors" role="alert"></p>
       </fieldset>
 

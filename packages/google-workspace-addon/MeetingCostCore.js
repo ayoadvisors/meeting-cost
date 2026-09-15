@@ -84,28 +84,52 @@
     if (typeof src === 'string') src = parseRateLines(src).rates;
     if (src && typeof src === 'object') {
       Object.keys(src).forEach(function (key) {
-        var k = String(key).trim().toLowerCase();
+        var k = rateKey(key);
         if (!k) return;
-        var entry = normalizeRateEntry(src[key]);
+        var entry = normalizeRateEntry(src[key], key);
         if (entry) cfg.rates[k] = entry;
       });
     }
     return cfg;
   }
 
-  function normalizeRateEntry(entry) {
+  /**
+   * Rates can be keyed three ways:
+   *   'john@acme.com'   exact e-mail
+   *   '@acme.com'       everyone at a domain
+   *   'name:john smith' a display name, for calendars that never expose
+   *                     e-mail addresses (Outlook on the web). Written as
+   *                     "John Smith = 150/hr" in the rate list.
+   */
+  function rateKey(raw) {
+    var k = String(raw || '').trim();
+    if (!k) return '';
+    if (k.indexOf('@') >= 0) return k.toLowerCase();
+    if (/^name:/i.test(k)) return 'name:' + normalizeName(k.slice(5));
+    return 'name:' + normalizeName(k);
+  }
+
+  function normalizeName(name) {
+    return String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  function normalizeRateEntry(entry, rawKey) {
+    var out = null;
     if (entry === null || entry === undefined) return null;
     if (typeof entry === 'number' || typeof entry === 'string') {
       var n = toNumber(entry, null);
-      return n === null ? null : { hourly: n };
-    }
-    if (typeof entry === 'object') {
+      out = n === null ? null : { hourly: n };
+    } else if (typeof entry === 'object') {
       var hourly = toNumber(entry.hourly, null);
       var salary = toNumber(entry.salary !== undefined ? entry.salary : entry.annual, null);
-      if (hourly !== null) return { hourly: hourly };
-      if (salary !== null) return { salary: salary };
+      if (hourly !== null) out = { hourly: hourly };
+      else if (salary !== null) out = { salary: salary };
+      if (out && typeof entry.label === 'string' && entry.label.trim()) out.label = entry.label.trim();
     }
-    return null;
+    if (out && !out.label && rawKey && String(rawKey).indexOf('@') < 0) {
+      out.label = String(rawKey).replace(/^name:/i, '').trim();
+    }
+    return out;
   }
 
   /* ------------------------------------------------------------------ */
@@ -126,18 +150,23 @@
   }
 
   /**
-   * Find the hourly rate for an email address.
-   * Order: exact email -> "@domain" -> defaultHourlyRate.
-   * Returns { hourly, baseHourly, source: 'exact'|'domain'|'default' }.
+   * Find the hourly rate for a person.
+   * Order: exact email -> display name -> "@domain" -> defaultHourlyRate.
+   * Returns { hourly, baseHourly, source: 'exact'|'name'|'domain'|'default' }.
    */
-  function resolveRate(email, config) {
+  function resolveRate(email, config, name) {
     var cfg = config || DEFAULT_CONFIG;
     var e = (email || '').trim().toLowerCase();
+    var n = normalizeName(name);
     var base = null;
     var source = 'default';
     if (e && cfg.rates[e]) {
       base = hourlyFromEntry(cfg.rates[e], cfg);
       source = 'exact';
+    }
+    if (base === null && n && cfg.rates['name:' + n]) {
+      base = hourlyFromEntry(cfg.rates['name:' + n], cfg);
+      source = 'name';
     }
     if (base === null && e) {
       var d = domainOf(e);
@@ -257,7 +286,7 @@
     var end = toDate(input.end);
 
     var people = normalizeAttendees(input.attendees).map(function (a) {
-      var rate = resolveRate(a.email, cfg);
+      var rate = resolveRate(a.email, cfg, a.name);
       var counted = isCounted(a, cfg);
       return {
         email: a.email,
@@ -389,7 +418,7 @@
 
   var UNIT_HOURLY = /^(hr|h|hour|hourly|ph)$/i;
   var UNIT_ANNUAL = /^(yr|y|year|annual|annually|salary|pa)$/i;
-  var LINE_RE = /^([^=:\s]+)\s*[=:]\s*\$?\s*([\d,]+(?:\.\d+)?)\s*(k)?\s*(?:\/\s*|\s+per\s+|\s+)?([A-Za-z]*)\s*$/;
+  var LINE_RE = /^(.+?)\s*[=:]\s*\$?\s*([\d,]+(?:\.\d+)?)\s*(k)?\s*(?:\/\s*|\s+per\s+|\s+)?([A-Za-z]*)\s*$/;
 
   /**
    * Parse a human-friendly rate list:
@@ -399,6 +428,7 @@
    *   olivia@acme.com = 300000/yr
    *   @acme.com = 95              (domain default, hourly when no unit)
    *   @partner.io = 180k/yr
+   *   Benjamin Brown = 150/hr     (display name, for calendars without e-mails)
    *
    * @returns {{ rates: Object, errors: Array<{line:number,text:string,message:string}> }}
    */
@@ -410,12 +440,13 @@
       if (!line || line.charAt(0) === '#' || line.indexOf('//') === 0) return;
       var m = LINE_RE.exec(line);
       if (!m) {
-        errors.push({ line: index + 1, text: raw, message: 'Expected "email = amount/hr" or "@domain = amount/yr"' });
+        errors.push({ line: index + 1, text: raw, message: 'Expected "email = amount/hr", "@domain = amount/yr" or "Full Name = amount/hr"' });
         return;
       }
-      var key = m[1].toLowerCase();
-      if (key.indexOf('@') < 0 || key.indexOf('@') !== key.lastIndexOf('@')) {
-        errors.push({ line: index + 1, text: raw, message: 'Key must be an email address or "@domain"' });
+      var rawKey = m[1].trim();
+      var isEmailish = rawKey.indexOf('@') >= 0;
+      if (isEmailish && (rawKey.indexOf('@') !== rawKey.lastIndexOf('@') || /\s/.test(rawKey))) {
+        errors.push({ line: index + 1, text: raw, message: 'Key must be an email address, "@domain" or a person\'s name' });
         return;
       }
       var amount = parseFloat(m[2].replace(/,/g, ''));
@@ -425,7 +456,9 @@
         errors.push({ line: index + 1, text: raw, message: 'Unknown unit "' + unit + '" (use /hr or /yr)' });
         return;
       }
-      rates[key] = UNIT_ANNUAL.test(unit) ? { salary: amount } : { hourly: amount };
+      var entry = UNIT_ANNUAL.test(unit) ? { salary: amount } : { hourly: amount };
+      if (!isEmailish) entry.label = rawKey.replace(/^name:/i, '').trim();
+      rates[rateKey(rawKey)] = entry;
     });
     return { rates: rates, errors: errors };
   }
@@ -433,9 +466,10 @@
   function serializeRateLines(rates) {
     return Object.keys(rates || {}).sort().map(function (key) {
       var entry = rates[key];
-      if (entry && isFiniteNumber(entry.salary)) return key + ' = ' + entry.salary + '/yr';
+      var shown = (entry && entry.label) || (key.indexOf('name:') === 0 ? key.slice(5) : key);
+      if (entry && isFiniteNumber(entry.salary)) return shown + ' = ' + entry.salary + '/yr';
       var hourly = entry && isFiniteNumber(entry.hourly) ? entry.hourly : entry;
-      return key + ' = ' + hourly + '/hr';
+      return shown + ' = ' + hourly + '/hr';
     }).join('\n');
   }
 
@@ -479,17 +513,21 @@
 
   function enc(s) { return encodeURIComponent(s); }
 
+  // Recipients may be empty when the calendar never exposed e-mail addresses
+  // (Outlook on the web); the draft then opens with just subject and body.
   var composeUrl = {
     gmail: function (draft) {
-      return 'https://mail.google.com/mail/?view=cm&fs=1&to=' + enc(draft.to.join(',')) +
+      return 'https://mail.google.com/mail/?view=cm&fs=1' +
+        (draft.to.length ? '&to=' + enc(draft.to.join(',')) : '') +
         '&su=' + enc(draft.subject) + '&body=' + enc(draft.body);
     },
     outlook: function (draft, host) {
       var base = host === 'live'
         ? 'https://outlook.live.com/mail/0/deeplink/compose'
-        : 'https://outlook.office.com/mail/deeplink/compose';
-      return base + '?to=' + enc(draft.to.join(';')) +
-        '&subject=' + enc(draft.subject) + '&body=' + enc(draft.body);
+        : (host === 'cloud' ? 'https://outlook.cloud.microsoft/mail/deeplink/compose'
+          : 'https://outlook.office.com/mail/deeplink/compose');
+      return base + '?' + (draft.to.length ? 'to=' + enc(draft.to.join(';')) + '&' : '') +
+        'subject=' + enc(draft.subject) + '&body=' + enc(draft.body);
     },
     mailto: function (draft) {
       return 'mailto:' + draft.to.join(',') + '?subject=' + enc(draft.subject) + '&body=' + enc(draft.body);

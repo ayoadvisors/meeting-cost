@@ -9,43 +9,33 @@
   .wrap { max-width: 720px; margin: 0 auto; }
   h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
   .lede { color: #616161; margin: 0 0 16px; }
-  .pane { background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.14); max-width: 520px; padding: 16px 20px; }
-  .subject { font-size: 20px; font-weight: 600; margin: 0 0 6px; }
-  .when { color: #424242; margin-bottom: 12px; }
-  .section { margin-top: 14px; }
-  .section h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .3px; color: #616161; margin: 0 0 6px; }
-  .persona { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
-  .persona img { width: 28px; height: 28px; border-radius: 50%; background: #c7e0f4; }
-  .persona .txt { display: flex; flex-direction: column; }
-  .persona .sub { color: #616161; font-size: 12px; }
+  .peek { background: #fff; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.18); max-width: 420px; padding: 16px 20px; }
+  .subject { font-size: 18px; font-weight: 600; margin: 0 0 6px; }
+  .time { color: #424242; margin-bottom: 10px; }
+  .link { color: #0f6cbd; display: block; margin-bottom: 12px; }
+  .people { display: flex; flex-direction: column; gap: 6px; }
+  .person { display: flex; align-items: center; gap: 8px; }
+  .avatar { width: 24px; height: 24px; border-radius: 50%; background: #c7e0f4; color: #0f4c81; font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
+  .person [role="button"] { color: #242424; cursor: pointer; }
+  .person .rsvp { color: #616161; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Meeting Cost demo, Outlook flavour</h1>
-  <p class="lede">A rough stand-in for an Outlook on the web event reading pane. Guests here expose their e-mail only through <code>title</code> attributes and the date uses Outlook's <code>Thu 2/2/2023 11:00 AM - 12:00 PM</code> format, which exercises the extension's generic extraction path.</p>
+  <p class="lede">A stand-in for the event peek on Outlook on the web, using the markup seen on a real account: the time line is a <code>span[aria-label="Time"]</code> in <code>Thu 9/17/2026 4:00 PM - 4:30 PM</code> form, and every person is a "persona" button labelled <code>Opens card for Name</code> with their RSVP as plain text. No e-mail address appears anywhere, so rates are matched by name.</p>
 
-  <div class="pane" role="main">
-    <h2 class="subject">Marketing Sync</h2>
-    <div class="when" id="when">Thu 2/2/2023 11:00 AM - 12:00 PM</div>
-    <div>Microsoft Teams meeting</div>
-
-    <div class="section">
-      <h3>Organizer</h3>
-      <div class="persona" title="John Smith <john.smith@acme.com>"><img alt=""><div class="txt"><span>John Smith</span><span class="sub">Organizer</span></div></div>
-    </div>
-
-    <div class="section">
-      <h3>Required</h3>
-      <div class="persona" title="Olivia Jones <olivia.jones@acme.com>"><img alt=""><div class="txt"><span>Olivia Jones</span><span class="sub">Accepted</span></div></div>
-      <div class="persona" title="Justin Mendel <justin.mendel@acme.com>"><img alt=""><div class="txt"><span>Justin Mendel</span><span class="sub">No response</span></div></div>
-      <div class="persona" title="Vera Katts <vera.katts@acme.com>"><img alt=""><div class="txt"><span>Vera Katts</span><span class="sub">Accepted</span></div></div>
-    </div>
-
-    <div class="section">
-      <h3>Optional</h3>
-      <div class="persona" title="Alex Jones <alex.jones@acme.com>"><img alt=""><div class="txt"><span>Alex Jones</span><span class="sub">Tentative</span></div></div>
-      <div class="persona" title="Sam Lee <sam.lee@acme.com>"><img alt=""><div class="txt"><span>Sam Lee</span><span class="sub">Declined</span></div></div>
+  <div class="peek">
+    <div class="subject">Curriculum Committee sync</div>
+    <div class="time"><span aria-label="Time" id="when">Thu 9/17/2026 4:00 PM - 4:30 PM</span></div>
+    <a class="link" href="#" onclick="return false">Join Teams meeting</a>
+    <div class="people">
+      <!-- As on the real page: the avatar and the name are two persona buttons with the same label. -->
+      <div class="person"><span class="avatar" role="button" aria-label="Opens card for John Smith">JS</span><span><span role="button" aria-label="Opens card for John Smith">John Smith</span>, <span class="rsvp">Organizer</span></span></div>
+      <div class="person"><span class="avatar" role="button" aria-label="Opens card for Benjamin Brown">BB</span><span><span role="button" aria-label="Opens card for Benjamin Brown">Benjamin Brown</span>, <span class="rsvp">You didn't respond</span></span></div>
+      <div class="person"><span class="avatar" role="button" aria-label="Opens card for Olivia Jones">OJ</span><span><span role="button" aria-label="Opens card for Olivia Jones">Olivia Jones</span>, <span class="rsvp">Accepted</span></span></div>
+      <div class="person"><span class="avatar" role="button" aria-label="Opens card for Vera Katts">VK</span><span><span role="button" aria-label="Opens card for Vera Katts">Vera Katts</span>, <span class="rsvp">Tentative</span></span></div>
+      <div class="person"><span class="avatar" role="button" aria-label="Opens card for Sam Lee">SL</span><span><span role="button" aria-label="Opens card for Sam Lee">Sam Lee</span>, <span class="rsvp">Declined</span></span></div>
     </div>
   </div>
 </div>
@@ -55,8 +45,7 @@
   window.MC_DEMO_CONFIG = {
     tickSeconds: 1,
     rates: {
-      'john.smith@acme.com': 144.23, 'olivia.jones@acme.com': 144.23, 'justin.mendel@acme.com': 84.3,
-      'vera.katts@acme.com': 120.19, 'alex.jones@acme.com': 110.3, 'sam.lee@acme.com': 99
+      'John Smith': 144.23, 'Olivia Jones': 144.23, 'Vera Katts': 120.19, 'Sam Lee': 99
     }
   };
   (function () {

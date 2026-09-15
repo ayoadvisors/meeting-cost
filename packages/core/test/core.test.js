@@ -194,7 +194,7 @@ test('parseRateLines accepts the documented syntax and reports bad lines', () =>
     '',
     'this is not a rate',
     'bob@acme.com = 12/fortnight',
-    'noatsign = 10'
+    'Pat Lee = 10'
   ].join('\n');
   const { rates, errors } = core.parseRateLines(text);
   assert.deepEqual(rates, {
@@ -202,9 +202,10 @@ test('parseRateLines accepts the documented syntax and reports bad lines', () =>
     'olivia@acme.com': { salary: 300000 },
     '@acme.com': { hourly: 95 },
     '@partner.io': { salary: 180000 },
-    'cfo@acme.com': { hourly: 250 }
+    'cfo@acme.com': { hourly: 250 },
+    'name:pat lee': { hourly: 10, label: 'Pat Lee' }
   });
-  assert.deepEqual(errors.map(e => e.line), [8, 9, 10]);
+  assert.deepEqual(errors.map(e => e.line), [8, 9]);
   assert.match(errors[1].message, /Unknown unit/);
 });
 
@@ -272,4 +273,38 @@ test('createTicker fires now, aligns to the next boundary, then repeats; stop cl
   assert.equal(calls.length, 3, 'no calls after stop');
   assert.deepEqual(timeouts.cleared, ['t1']);
   assert.deepEqual(intervals.cleared, ['i1']);
+});
+
+test('rates can be keyed by display name for calendars that hide e-mail addresses', () => {
+  const { rates, errors } = core.parseRateLines('Benjamin Brown = 150/hr\nname:Olivia Jones = 300k/yr\n@acme.com = 95\nbad@@x = 1');
+  assert.deepEqual(errors.map(e => e.line), [4]);
+  assert.deepEqual(rates, {
+    'name:benjamin brown': { hourly: 150, label: 'Benjamin Brown' },
+    'name:olivia jones': { salary: 300000, label: 'Olivia Jones' },
+    '@acme.com': { hourly: 95 }
+  });
+  assert.equal(core.serializeRateLines(rates), '@acme.com = 95/hr\nBenjamin Brown = 150/hr\nOlivia Jones = 300000/yr');
+
+  const cfg = core.normalizeConfig({ defaultHourlyRate: 80, hoursPerYear: 2000, rates: { 'Vera  Katts': 120, 'v@acme.com': 200 } });
+  assert.deepEqual(core.resolveRate('', cfg, 'vera katts'), { baseHourly: 120, hourly: 120, source: 'name' });
+  assert.deepEqual(core.resolveRate('v@acme.com', cfg, 'Vera Katts'), { baseHourly: 200, hourly: 200, source: 'exact' }, 'an e-mail match beats a name match');
+  assert.deepEqual(core.resolveRate('', cfg, 'Nobody Known'), { baseHourly: 80, hourly: 80, source: 'default' });
+
+  const r = core.computeMeeting({
+    attendees: [{ name: 'Vera Katts', status: 'Accepted' }, { name: 'Sam Lee', status: 'declined' }, { name: 'Vera Katts' }],
+    start: START, end: END, config: cfg, now: at(-1)
+  });
+  assert.equal(r.people.length, 2, 'name-only attendees de-duplicate by name');
+  assert.equal(r.countedPeople, 1);
+  assert.equal(r.people[0].rateSource, 'name');
+  assert.equal(r.headline, '$120.00');
+});
+
+test('email draft and compose links cope with no known recipients', () => {
+  const computed = core.computeMeeting({ attendees: [{ name: 'A B' }, { name: 'C D' }], start: START, end: END, config: CONFIG, now: at(-1) });
+  const draft = core.buildEmailDraft({ title: 'Sync', computed });
+  assert.deepEqual(draft.to, []);
+  assert.equal(core.composeUrl.outlook(draft, 'cloud'), 'https://outlook.cloud.microsoft/mail/deeplink/compose?subject=' + encodeURIComponent(draft.subject) + '&body=' + encodeURIComponent(draft.body));
+  assert.ok(core.composeUrl.outlook(draft).startsWith('https://outlook.office.com/mail/deeplink/compose?subject='));
+  assert.ok(core.composeUrl.gmail(draft).startsWith('https://mail.google.com/mail/?view=cm&fs=1&su='));
 });

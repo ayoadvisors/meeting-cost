@@ -73,7 +73,28 @@ heuristics now lean on:
 - Events with fewer than two people (an event you created for yourself) show
   no widget.
 
-Outlook on the web was exercised only against the fixture in `demo/outlook.html`.
+### Verified against Outlook on the web (September 2026, `outlook.cloud.microsoft`)
+
+The extractor was run on a live Microsoft 365 account (a university tenant):
+
+- The event peek is a plain Fluent UI popover: no `role="dialog"`, class
+  names are hashed. The time line is `span[aria-label="Time"]` reading
+  `Mon 7/27/2026 7:00 PM - 9:00 PM`.
+- **No e-mail address exists anywhere in the peek's DOM.** People are
+  "persona" buttons, `span[role="button"][aria-label="Opens card for Jane Doe"]`,
+  and Outlook renders two of them per person (the avatar initials and the
+  name). The RSVP is plain text next to the name: `Accepted`, `Tentative`,
+  `Declined`, `You didn't respond`, or `Organizer`.
+- So on Outlook attendees are keyed by **display name**, rates are matched
+  with `Full Name = 150/hr` lines, and the "Send an Email Instead" draft opens
+  with subject and body but no recipients (there are no addresses to put in).
+- The subject sits above the block that holds the people, so the title search
+  climbs a few ancestors and prefers large text even when it is clickable.
+- Google's people chips take precedence over persona buttons, and both take
+  precedence over addresses found in free text, so descriptions never add guests.
+
+The multi-attendee case on Outlook was verified against `demo/outlook.html`,
+which mirrors that markup; the live account had only single-person appointments.
 
 ## Files
 

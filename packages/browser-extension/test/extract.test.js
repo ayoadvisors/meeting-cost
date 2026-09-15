@@ -121,3 +121,9 @@ test('parseTimeRangeText reports whether a date was present and insists on a sep
   assert.equal(extract.parseTimeRangeText('GMT-04 12 AM 1 AM 2 AM 3 AM 4 AM', NOW), null);
   assert.equal(extract.parseTimeRangeText('11:00am 12:00pm', NOW), null, 'two times with nothing between them');
 });
+
+test("detectStatus knows Outlook's wording", () => {
+  assert.equal(extract.detectStatus("Benjamin Brown, You didn't respond"), 'pending');
+  assert.equal(extract.detectStatus('Olivia Jones, Accepted'), 'accepted');
+  assert.equal(extract.detectStatus('Sam Lee, Declined'), 'declined');
+});

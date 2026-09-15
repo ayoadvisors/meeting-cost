@@ -106,12 +106,18 @@
         (config.tickSeconds === 60 ? 'minute' : config.tickSeconds + ' s');
     }
 
+    // People are matched by e-mail when the calendar exposes one, otherwise
+    // by display name (Outlook on the web never shows addresses).
+    function personKey(p) {
+      return p.email ? String(p.email).toLowerCase() : 'name:' + String(p.name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+
     function annotate() {
       if (!computed) return;
-      var byEmail = {};
-      computed.people.forEach(function (p) { byEmail[p.email] = p; });
+      var byKey = {};
+      computed.people.forEach(function (p) { byKey[personKey(p)] = p; });
       spec.attendees.forEach(function (a) {
-        var person = byEmail[a.email];
+        var person = byKey[personKey(a)];
         if (!person || !a.rowEl || !a.rowEl.isConnected) return;
         var existing = a.rowEl.querySelector('[data-mc="annot"]');
         var text = ' (' + core.formatMoney(person.hourlyRate, config) + ' per hour' +
@@ -124,7 +130,14 @@
         span.title = person.rateSource === 'default'
           ? 'Default rate. Set a real one in the Meeting Cost options.'
           : 'Rate from your Meeting Cost options (' + person.rateSource + ' match)';
-        nameNode.parentNode.insertBefore(span, nameNode.nextSibling);
+        // When the name sits inside a clickable persona (Outlook's "Opens card
+        // for..." button), annotate next to the button, not inside it.
+        var host = nameNode.parentElement && nameNode.parentElement.closest('[role="button"], button, a');
+        if (host && host !== a.rowEl && a.rowEl.contains(host) && host.parentNode) {
+          host.parentNode.insertBefore(span, host.nextSibling);
+        } else {
+          nameNode.parentNode.insertBefore(span, nameNode.nextSibling);
+        }
         annotations.push(span);
       });
     }

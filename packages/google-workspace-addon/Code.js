@@ -227,7 +227,7 @@ function buildSettingsCard_(e) {
       .setFieldName('rates').setTitle('Rates by person or domain')
       .setMultiline(true)
       .setValue(MeetingCostCore.serializeRateLines(cfg.rates))
-      .setHint('One per line: email = 144.23/hr, email = 300000/yr, @domain = 95'))
+      .setHint('One per line: email = 144.23/hr, email = 300000/yr, @domain = 95, Full Name = 150/hr'))
     .addWidget(CardService.newTextButton()
       .setText('Save')
       .setTextButtonStyle(CardService.TextButtonStyle.FILLED)

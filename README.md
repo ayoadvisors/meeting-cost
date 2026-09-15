@@ -26,7 +26,7 @@ draft addressed to the guests with the cost spelled out.
 |---|---|
 | Core | 24 unit tests, including the post's exact numbers |
 | Extension on Google Calendar | installed unpacked and run on a live calendar.google.com account: correct guests, statuses, organizer, date, position in the popup, survives Google's own re-render, tears down on close, hides on solo events, the email button drafts to everyone but you, and saving a `@domain` rate in the options page updates the open popup without a reload |
-| Extension on Outlook web | fixture in `demo/outlook.html` only |
+| Extension on Outlook web | extractor run on a live Microsoft 365 account (`outlook.cloud.microsoft`): people are name-only persona buttons, RSVP text and time line parsed correctly; the multi-attendee widget verified against the matching fixture in `demo/outlook.html` |
 | Google Workspace add-on, Outlook add-in | written against the documented APIs, not yet deployed to a real account |
 
 To try the extension on a real calendar without installing it, run
@@ -81,7 +81,12 @@ john.smith@acme.com = 144.23/hr
 olivia.jones@acme.com = 300000/yr
 @acme.com = 95
 @partner.io = 180k/yr
+Vera Katts = 120.19/hr      # by display name, for Outlook on the web
 ```
+
+Exact e-mail wins over a name, which wins over `@domain`, which wins over
+the default. Names matter because Outlook on the web never puts an e-mail
+address in its event popup; people appear by display name only.
 
 ## Privacy
 

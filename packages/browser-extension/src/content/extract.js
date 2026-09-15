@@ -216,12 +216,17 @@
     '[role="grid"], [role="navigation"], [role="banner"], [role="menu"], nav, header';
   var BOUNDARY_SELECTOR = '[role="dialog"], [role="alertdialog"], [role="main"], [role="complementary"], [role="region"], main, aside';
   var ROW_SELECTOR = '[role="listitem"], [role="treeitem"], [role="option"], li, [data-hovercard-id], [data-email], [data-address]';
+  // Outlook on the web: every person is a "persona" button that opens a
+  // contact card; its accessible name carries the display name.
+  var PERSONA_SELECTOR = '[role="button"][aria-label^="Opens card for "], [role="button"][aria-label^="Open card for "], ' +
+    '[role="button"][aria-label^="Contact card for "]';
+  var PERSONA_PREFIX = /^(?:Opens|Open|Contact) card for /i;
 
   var STATUS_RULES = [
     [/\b(declined|not going|not attending)\b/i, 'declined'],
     [/\b(tentative|tentatively|maybe)\b/i, 'tentative'],
     [/\b(accepted|going|attending|yes)\b/i, 'accepted'],
-    [/\b(awaiting|pending|needs? action|no response|not responded|hasn.t responded|invited)\b/i, 'pending']
+    [/\b(awaiting|pending|needs? action|no response|not responded|hasn.t responded|didn.t respond|invited)\b/i, 'pending']
   ];
 
   function createWalker(root, whatToShow) {
@@ -381,16 +386,25 @@
    */
   function collectAttendees(container, opts) {
     opts = opts || {};
-    var byEmail = {};
+    var byKey = {};
     var order = [];
 
     function add(email, el, fromAttribute) {
       email = String(email || '').trim().toLowerCase();
-      if (!EMAIL_EXACT.test(email) || byEmail[email] || isSkipped(el)) return;
+      if (!EMAIL_EXACT.test(email) || byKey[email] || isSkipped(el)) return;
       if (/^\d+@/.test(email)) return; // Zoom/SIP dial-in addresses, not people
       if (opts.ignoreEmail && email === opts.ignoreEmail) return;
-      byEmail[email] = { email: email, el: el, fromAttribute: fromAttribute };
+      byKey[email] = { email: email, name: '', el: el, fromAttribute: fromAttribute };
       order.push(email);
+    }
+
+    function addPerson(name, el, rowEl) {
+      name = normalizeText(name);
+      if (!name || isSkipped(el)) return;
+      var key = 'name:' + name.toLowerCase();
+      if (byKey[key]) return;
+      byKey[key] = { email: '', name: name, el: el, rowEl: rowEl, fromAttribute: true };
+      order.push(key);
     }
 
     var i, el;
@@ -401,6 +415,44 @@
     for (i = 0; i < chips.length; i++) {
       el = chips[i];
       add(el.getAttribute('data-hovercard-id') || el.getAttribute('data-email') || el.getAttribute('data-address'), el, true);
+    }
+
+    // 1b. Persona buttons. Outlook on the web shows people by name only
+    //     ("Opens card for Jane Doe"); no e-mail address exists anywhere in
+    //     its DOM, so these attendees carry a name and an empty e-mail.
+    if (!order.length) {
+      // Outlook renders each person as two persona buttons with the same
+      // label (the avatar and the name), so group by name first.
+      var personas = container.querySelectorAll(PERSONA_SELECTOR);
+      var groups = {};
+      var groupOrder = [];
+      for (i = 0; i < personas.length; i++) {
+        el = personas[i];
+        var personaName = normalizeText((el.getAttribute('aria-label') || '').replace(PERSONA_PREFIX, ''));
+        if (!personaName) continue;
+        var gkey = personaName.toLowerCase();
+        if (!groups[gkey]) { groups[gkey] = { name: personaName, els: [] }; groupOrder.push(gkey); }
+        groups[gkey].els.push(el);
+      }
+      groupOrder.forEach(function (gkey) {
+        var group = groups[gkey];
+        // The row is the largest ancestor that holds this person's buttons
+        // (avatar, name, RSVP status) but nobody else's.
+        var row = group.els[0];
+        while (row.parentElement && row.parentElement !== container && !group.els.every(function (e) { return row.contains(e); })) {
+          row = row.parentElement;
+        }
+        for (var up = 0; up < 4; up++) {
+          var parent = row.parentElement;
+          if (!parent || parent === container) break;
+          var others = Array.prototype.filter.call(parent.querySelectorAll(PERSONA_SELECTOR), function (p) {
+            return normalizeText((p.getAttribute('aria-label') || '').replace(PERSONA_PREFIX, '')).toLowerCase() !== gkey;
+          });
+          if (others.length) break;
+          row = parent;
+        }
+        addPerson(group.name, group.els[group.els.length - 1], row);
+      });
     }
 
     // 2. Only when a calendar offers no chips (Outlook on the web) fall back
@@ -432,11 +484,11 @@
       }
     }
 
-    var list = order.map(function (email) {
-      var entry = byEmail[email];
-      var rowEl = (entry.el.closest && entry.el.closest(ROW_SELECTOR)) || entry.el;
+    var list = order.map(function (key) {
+      var entry = byKey[key];
+      var rowEl = entry.rowEl || (entry.el.closest && entry.el.closest(ROW_SELECTOR)) || entry.el;
       if (rowEl === container) rowEl = entry.el;
-      return { email: email, el: entry.el, rowEl: rowEl };
+      return { email: entry.email, name: entry.name, el: entry.el, rowEl: rowEl };
     });
 
     // A "row" that swallows other guests is really the whole list; shrink it.
@@ -449,7 +501,7 @@
       var rowText = normalizeText(textOf(a.rowEl) + ' ' + attrText(a.rowEl));
       return {
         email: a.email,
-        name: nameFor(a.rowEl === a.el ? a.el : a.rowEl, a.email) || nameFor(a.el, a.email),
+        name: a.name || nameFor(a.rowEl === a.el ? a.el : a.rowEl, a.email) || nameFor(a.el, a.email),
         status: detectStatus(rowText),
         optional: /\boptional\b/i.test(rowText),
         organizer: /\borgani[sz]er\b/i.test(rowText),
@@ -479,13 +531,16 @@
     while ((node = walker.nextNode())) {
       if (timeEl && timeEl.contains(node)) continue;
       var parent = node.parentElement;
-      if (!parent || (parent.closest && parent.closest(NOT_TITLE_SELECTOR))) continue;
+      if (!parent || (parent.closest && parent.closest(DECORATIVE_SELECTOR))) continue;
       var text = normalizeText(node.data);
-      if (text.length < 3 || EMAIL_EXACT.test(text) || TIME_QUICK.test(text)) continue;
+      if (text.length < 3 || EMAIL_EXACT.test(text) || TIME_QUICK.test(text) || !/^[\w"'(\[]/.test(text)) continue;
+      // Large text is the title even when it is clickable (Outlook's subject
+      // opens the event); otherwise controls, icons and links are not titles.
       if (view) {
         var size = parseFloat(view.getComputedStyle(parent).fontSize) || 0;
-        if (size >= 18) return text;
+        if (size >= 17) return text;
       }
+      if (parent.closest && parent.closest(NOT_TITLE_SELECTOR)) continue;
       if (!fallback) fallback = text;
     }
     return fallback;
@@ -525,11 +580,21 @@
       while (anchor.parentElement && anchor.parentElement !== container) anchor = anchor.parentElement;
       if (anchor === container || anchor.parentElement !== container) anchor = null;
 
+      // The subject may sit just outside the block that holds the guests
+      // (Outlook's peek puts it above); look a little higher when needed.
+      var title = guessTitle(container, timeEl);
+      var titleScope = container;
+      for (var upTitle = 0; !title && upTitle < 3 && titleScope.parentElement && titleScope.parentElement !== scope; upTitle++) {
+        titleScope = titleScope.parentElement;
+        title = guessTitle(titleScope, timeEl);
+        if (titleScope.matches(BOUNDARY_SELECTOR)) break;
+      }
+
       results.push({
         container: container,
         timeEl: timeEl,
         anchor: anchor,
-        title: guessTitle(container, timeEl),
+        title: title,
         start: time.start,
         end: time.end,
         attendees: attendees

@@ -13,7 +13,7 @@ self-contained; `npm run check` fails if a copy drifts.
 | Function | Purpose |
 |---|---|
 | `normalizeConfig(partial)` | merge untrusted config (storage, forms, JSON) with defaults; lower-cases rate keys |
-| `resolveRate(email, config)` | exact e-mail → `@domain` → default; salaries divided by `hoursPerYear`; overhead applied |
+| `resolveRate(email, config, name)` | exact e-mail → display name (`name:jane doe` keys, written `Jane Doe = 150/hr`) → `@domain` → default; salaries divided by `hoursPerYear`; overhead applied |
 | `normalizeAttendees(list)` | accept Google / Office.js / DOM attendee shapes, de-duplicate, invent names from e-mails |
 | `normalizeStatus(value)` | `needsAction`, `notResponded`, `Awaiting`… → `accepted` / `declined` / `tentative` / `pending` / `unknown` |
 | `computeMeeting({attendees,start,end,config,now})` | everything a UI renders: people with rates, combined hourly rate, per-minute burn, scheduled cost, phase (`upcoming` / `live` / `overrun` / `ended`), live cost, headline, label, subtitle |

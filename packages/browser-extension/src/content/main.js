@@ -33,7 +33,9 @@
       id: 'outlook',
       test: /(^|\.)outlook\.(office|office365|live)\.com$|(^|\.)outlook\.cloud\.microsoft$/i,
       composeUrl: function (draft) {
-        return core.composeUrl.outlook(draft, /outlook\.live\.com$/i.test(location.hostname) ? 'live' : 'office');
+        var host = /outlook\.live\.com$/i.test(location.hostname) ? 'live'
+          : (/outlook\.cloud\.microsoft$/i.test(location.hostname) ? 'cloud' : 'office');
+        return core.composeUrl.outlook(draft, host);
       },
       selfEmail: function () { return ''; }
     }
