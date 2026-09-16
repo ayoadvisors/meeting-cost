@@ -45,6 +45,14 @@
     return typeof n === 'number' && isFinite(n);
   }
 
+  // Own-property lookups only: rate tables and de-duplication maps are keyed
+  // by names and addresses taken from calendar pages, and a guest called
+  // "constructor" or "__proto__" must not resolve to Object.prototype.
+  var hasOwn = Object.prototype.hasOwnProperty;
+  function has(obj, key) {
+    return !!obj && hasOwn.call(obj, key);
+  }
+
   function toNumber(value, fallback) {
     if (value === null || value === undefined || value === '') return fallback;
     var n = typeof value === 'number' ? value : parseFloat(String(value).replace(/[$,\s]/g, ''));
@@ -160,17 +168,17 @@
     var n = normalizeName(name);
     var base = null;
     var source = 'default';
-    if (e && cfg.rates[e]) {
+    if (e && has(cfg.rates, e)) {
       base = hourlyFromEntry(cfg.rates[e], cfg);
       source = 'exact';
     }
-    if (base === null && n && cfg.rates['name:' + n]) {
+    if (base === null && n && has(cfg.rates, 'name:' + n)) {
       base = hourlyFromEntry(cfg.rates['name:' + n], cfg);
       source = 'name';
     }
     if (base === null && e) {
       var d = domainOf(e);
-      if (d && cfg.rates[d]) {
+      if (d && has(cfg.rates, d)) {
         base = hourlyFromEntry(cfg.rates[d], cfg);
         source = 'domain';
       }
@@ -230,7 +238,7 @@
    * list: { email, name, status, optional, organizer, self, resource }.
    */
   function normalizeAttendees(list) {
-    var seen = {};
+    var seen = Object.create(null);
     var out = [];
     (list || []).forEach(function (a) {
       if (!a) return;
@@ -383,7 +391,7 @@
   /* Formatting                                                          */
   /* ------------------------------------------------------------------ */
 
-  var formatterCache = {};
+  var formatterCache = Object.create(null);
 
   function formatMoney(amount, config) {
     var cfg = config || DEFAULT_CONFIG;
@@ -419,6 +427,9 @@
   var UNIT_HOURLY = /^(hr|h|hour|hourly|ph)$/i;
   var UNIT_ANNUAL = /^(yr|y|year|annual|annually|salary|pa)$/i;
   var LINE_RE = /^(.+?)\s*[=:]\s*\$?\s*([\d,]+(?:\.\d+)?)\s*(k)?\s*(?:\/\s*|\s+per\s+|\s+)?([A-Za-z]*)\s*$/;
+  // LINE_RE has several adjacent optional gaps; on a long run of spaces it
+  // backtracks for seconds. Lines are whitespace-collapsed and capped first.
+  var MAX_RATE_LINE = 300;
 
   /**
    * Parse a human-friendly rate list:
@@ -436,8 +447,12 @@
     var rates = {};
     var errors = [];
     String(text || '').split(/\r?\n/).forEach(function (raw, index) {
-      var line = raw.trim();
+      var line = raw.replace(/\s+/g, ' ').trim();
       if (!line || line.charAt(0) === '#' || line.indexOf('//') === 0) return;
+      if (line.length > MAX_RATE_LINE) {
+        errors.push({ line: index + 1, text: raw, message: 'Line is too long (' + MAX_RATE_LINE + ' characters at most)' });
+        return;
+      }
       var m = LINE_RE.exec(line);
       if (!m) {
         errors.push({ line: index + 1, text: raw, message: 'Expected "email = amount/hr", "@domain = amount/yr" or "Full Name = amount/hr"' });
@@ -477,10 +492,14 @@
   /* "Send an Email Instead"                                             */
   /* ------------------------------------------------------------------ */
 
+  // The title is read off the calendar page, i.e. written by whoever sent
+  // the invitation: keep it to one short line before it goes into a URL.
+  var MAX_TITLE = 200;
+
   function buildEmailDraft(input) {
     var computed = input.computed;
     var cfg = computed ? computed.config : normalizeConfig(input.config);
-    var title = (input.title || '').trim() || 'our meeting';
+    var title = String(input.title || '').replace(/\s+/g, ' ').trim().slice(0, MAX_TITLE) || 'our meeting';
     var to = (computed ? computed.people : normalizeAttendees(input.attendees))
       .filter(function (p) { return p.email && !p.resource && !p.self; })
       .map(function (p) { return p.email; });
@@ -512,6 +531,9 @@
   }
 
   function enc(s) { return encodeURIComponent(s); }
+  // Addresses in a mailto: path keep their "@" but nothing else that could
+  // be read as a delimiter or an escape.
+  function encAddress(a) { return enc(a).replace(/%40/g, '@'); }
 
   // Recipients may be empty when the calendar never exposed e-mail addresses
   // (Outlook on the web); the draft then opens with just subject and body.
@@ -530,7 +552,7 @@
         'subject=' + enc(draft.subject) + '&body=' + enc(draft.body);
     },
     mailto: function (draft) {
-      return 'mailto:' + draft.to.join(',') + '?subject=' + enc(draft.subject) + '&body=' + enc(draft.body);
+      return 'mailto:' + draft.to.map(encAddress).join(',') + '?subject=' + enc(draft.subject) + '&body=' + enc(draft.body);
     }
   };
 

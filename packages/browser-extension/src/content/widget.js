@@ -114,7 +114,7 @@
 
     function annotate() {
       if (!computed) return;
-      var byKey = {};
+      var byKey = Object.create(null);
       computed.people.forEach(function (p) { byKey[personKey(p)] = p; });
       spec.attendees.forEach(function (a) {
         var person = byKey[personKey(a)];

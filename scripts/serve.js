@@ -7,6 +7,10 @@
  *
  * Used for the demo page (demo/index.html). The Outlook add-in has its own
  * HTTPS server (packages/outlook-addin/serve.js) because Office requires TLS.
+ *
+ * Listens on the loopback interface only (this is a folder of your files),
+ * never serves dot-files or dot-directories (.git, .claude, .clasp.json) and
+ * refuses paths that escape the root.
  */
 'use strict';
 const http = require('http');
@@ -22,14 +26,29 @@ const TYPES = {
   '.md': 'text/markdown; charset=utf-8', '.txt': 'text/plain; charset=utf-8', '.ico': 'image/x-icon'
 };
 
-http.createServer((req, res) => {
-  const urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
+function send(res, status, type, body) {
+  res.writeHead(status, { 'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+  res.end(body);
+}
+
+function handler(req, res) {
+  let urlPath;
+  try { urlPath = decodeURIComponent((req.url || '/').split('?')[0]); }
+  catch (err) { return send(res, 400, 'text/plain', 'bad request'); }
+  if (urlPath.split('/').some((seg) => seg.startsWith('.'))) return send(res, 404, 'text/plain', 'not found');
   let file = path.normalize(path.join(root, urlPath));
-  if (!file.startsWith(root)) { res.writeHead(403); return res.end('forbidden'); }
+  if (file !== root && !file.startsWith(root + path.sep)) return send(res, 403, 'text/plain', 'forbidden');
   if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
   fs.readFile(file, (err, data) => {
-    if (err) { res.writeHead(404, { 'Content-Type': 'text/plain' }); return res.end('not found: ' + urlPath); }
-    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream', 'Cache-Control': 'no-store' });
-    res.end(data);
+    if (err) return send(res, 404, 'text/plain', 'not found: ' + urlPath);
+    send(res, 200, TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream', data);
   });
-}).listen(port, () => console.log('serving ' + root + ' at http://localhost:' + port + '/demo/'));
+}
+
+// Loopback only, on both address families so that "localhost" works whether
+// it resolves to 127.0.0.1 or ::1.
+http.createServer(handler).listen(port, '127.0.0.1', () =>
+  console.log('serving ' + root + ' at http://localhost:' + port + '/demo/'));
+const v6 = http.createServer(handler);
+v6.on('error', () => { /* no IPv6 loopback here; the IPv4 listener is enough */ });
+v6.listen(port, '::1');

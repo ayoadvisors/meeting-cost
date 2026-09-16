@@ -51,21 +51,17 @@
 
   /* ---- config ------------------------------------------------------- */
 
-  var storage = (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) ? chrome.storage.sync : null;
+  // Rates live in chrome.storage.local (see src/storage.js). Demo pages and
+  // the console build have no extension storage and use MC_DEMO_CONFIG.
+  var store = root.MeetingCostStorage && root.MeetingCostStorage.available ? root.MeetingCostStorage : null;
   var config = core.normalizeConfig(root.MC_DEMO_CONFIG || {});
 
   function loadConfig(done) {
-    if (!storage) return done();
-    try {
-      storage.get('config', function (result) {
-        if (!(chrome.runtime && chrome.runtime.lastError) && result && result.config) {
-          config = core.normalizeConfig(result.config);
-        }
-        done();
-      });
-    } catch (err) {
+    if (!store) return done();
+    store.load(function (raw) {
+      if (raw) config = core.normalizeConfig(raw);
       done();
-    }
+    });
   }
 
   /* ---- mounts -------------------------------------------------------- */
@@ -164,12 +160,10 @@
     }
   }, 1000);
 
-  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
-    chrome.storage.onChanged.addListener(function (changes, area) {
-      if (area === 'sync' && changes.config) {
-        config = core.normalizeConfig(changes.config.newValue);
-        resetAndScan();
-      }
+  if (store) {
+    store.onChange(function (raw) {
+      config = core.normalizeConfig(raw || {});
+      resetAndScan();
     });
   }
 
@@ -179,6 +173,7 @@
   });
 
   // Handy for debugging from DevTools and for the demo page's self-checks.
+  // Content scripts run in an isolated world, so page scripts cannot reach it.
   root.__meetingCost = {
     provider: provider.id,
     scan: scan,

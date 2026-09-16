@@ -127,3 +127,24 @@ test("detectStatus knows Outlook's wording", () => {
   assert.equal(extract.detectStatus('Olivia Jones, Accepted'), 'accepted');
   assert.equal(extract.detectStatus('Sam Lee, Declined'), 'declined');
 });
+
+/* ---- hardening: text written by whoever sent the invitation ---- */
+
+test('EMAIL_G stays linear on an adversarial "aaaa@bbbb" run (a hostile description)', () => {
+  const s = 'a'.repeat(40000) + '@' + 'b'.repeat(40000);
+  const t = process.hrtime.bigint();
+  const found = s.match(extract.EMAIL_G);
+  const ms = Number(process.hrtime.bigint() - t) / 1e6;
+  assert.equal(found, null);
+  assert.ok(ms < 250, 'took ' + ms.toFixed(0) + ' ms');
+  assert.deepEqual("mail john.smith@acme.com and o'brien@sub.example.co.uk".match(extract.EMAIL_G),
+    ['john.smith@acme.com', "o'brien@sub.example.co.uk"]);
+});
+
+test('parseTimeRangeText copes with a very long hostile line', () => {
+  const t = process.hrtime.bigint();
+  const r = extract.parseTimeRangeText('x '.repeat(50000) + '11:00am – 12:00pm' + ' 9:'.repeat(20000), NOW);
+  const ms = Number(process.hrtime.bigint() - t) / 1e6;
+  assert.ok(ms < 250, 'took ' + ms.toFixed(0) + ' ms');
+  assert.ok(r && r.start.getTime() === local(2023, 1, 2, 11, 0));
+});

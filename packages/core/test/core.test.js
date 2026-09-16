@@ -308,3 +308,50 @@ test('email draft and compose links cope with no known recipients', () => {
   assert.ok(core.composeUrl.outlook(draft).startsWith('https://outlook.office.com/mail/deeplink/compose?subject='));
   assert.ok(core.composeUrl.gmail(draft).startsWith('https://mail.google.com/mail/?view=cm&fs=1&su='));
 });
+
+/* ---- hardening: input that anyone who can send an invitation controls ---- */
+
+test('hostile names and addresses never resolve through Object.prototype', () => {
+  const people = core.normalizeAttendees([
+    { name: 'constructor' }, { name: '__proto__' }, { name: 'toString' }, { name: 'hasOwnProperty' },
+    { email: 'valueOf@x.com', name: 'valueOf' }
+  ]);
+  assert.deepEqual(people.map(p => p.name), ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueOf']);
+
+  const cfg = core.normalizeConfig({ defaultHourlyRate: 80, rates: { '@x.com': 95 } });
+  assert.equal(core.resolveRate('', cfg, 'constructor').source, 'default');
+  assert.equal(core.resolveRate('', cfg, '__proto__').source, 'default');
+  assert.equal(core.resolveRate('constructor@x.com', cfg).source, 'domain');
+  assert.equal(core.resolveRate('a@constructor', cfg).source, 'default');
+
+  // A rate table that arrived as JSON with a "__proto__" key must not touch the prototype.
+  const polluted = core.normalizeConfig({ rates: JSON.parse('{"__proto__": {"hourly": 1}, "constructor": 2}') });
+  assert.equal(({}).hourly, undefined);
+  assert.deepEqual(Object.keys(polluted.rates).sort(), ['name:__proto__', 'name:constructor']);
+  assert.equal(core.formatMoney(1, core.normalizeConfig({ currency: 'USD', locale: 'en-US' })), '$1.00');
+});
+
+test('parseRateLines stays fast on pathological whitespace and rejects overlong lines', () => {
+  const t = process.hrtime.bigint();
+  const wide = core.parseRateLines('a@b.com = 5' + ' '.repeat(20000) + '!');
+  const ms = Number(process.hrtime.bigint() - t) / 1e6;
+  assert.ok(ms < 200, 'took ' + ms.toFixed(0) + ' ms');
+  assert.equal(wide.errors.length, 1);
+  assert.match(wide.errors[0].message, /Expected/);
+
+  const long = core.parseRateLines('a@b.com = ' + '1'.repeat(400) + '/hr');
+  assert.equal(long.errors.length, 1);
+  assert.match(long.errors[0].message, /too long/);
+  assert.deepEqual(core.parseRateLines('  a@b.com   =   50   /   hr  ').rates, { 'a@b.com': { hourly: 50 } });
+});
+
+test('buildEmailDraft keeps a hostile title to one short line; mailto encodes odd addresses', () => {
+  const title = 'Sync\n\nBcc: ceo@acme.com\r\n' + 'x'.repeat(500);
+  const draft = core.buildEmailDraft({ title, attendees: POST_ATTENDEES, config: CONFIG });
+  assert.ok(!/[\r\n]/.test(draft.subject), 'no line breaks in the subject');
+  assert.ok(draft.subject.length <= 'Re: '.length + 200 + ' (can we do this over email?)'.length);
+  assert.ok(draft.subject.startsWith('Re: Sync Bcc: ceo@acme.com xxxx'));
+
+  const odd = core.composeUrl.mailto({ to: ["o'brien%41@x.com", 'a&b=c@x.com'], subject: 's', body: 'b' });
+  assert.ok(odd.startsWith("mailto:o'brien%2541@x.com,a%26b%3Dc@x.com?subject=s&body=b"), odd);
+});

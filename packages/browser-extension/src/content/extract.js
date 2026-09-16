@@ -24,7 +24,10 @@
   /* Text parsing                                                        */
   /* ------------------------------------------------------------------ */
 
-  var EMAIL_SRC = "[A-Z0-9._%+'-]+@[A-Z0-9-]+(?:\\.[A-Z0-9-]+)*\\.[A-Z]{2,}";
+  // Bounded quantifiers on purpose (RFC 5321 lengths): the unbounded form
+  // backtracks quadratically on a long "aaaa@bbbb" run, and this regex runs
+  // over text written by whoever sent the invitation.
+  var EMAIL_SRC = "[A-Z0-9._%+'-]{1,64}@[A-Z0-9-]{1,63}(?:\\.[A-Z0-9-]{1,63})*\\.[A-Z]{2,24}";
   var EMAIL_G = new RegExp(EMAIL_SRC, 'gi');
   var EMAIL_EXACT = new RegExp('^' + EMAIL_SRC + '$', 'i');
 
@@ -53,6 +56,11 @@
       .replace(/[    ]/g, ' ')      // odd spaces (Google uses narrow NBSP before am/pm)
       .replace(/\s+/g, ' ')
       .trim();
+  }
+
+  /** decodeURIComponent that shrugs at a malformed "%" sequence instead of throwing. */
+  function safeDecode(s) {
+    try { return decodeURIComponent(s); } catch (err) { return s; }
   }
 
   function meridiemOf(raw) {
@@ -221,6 +229,9 @@
   var PERSONA_SELECTOR = '[role="button"][aria-label^="Opens card for "], [role="button"][aria-label^="Open card for "], ' +
     '[role="button"][aria-label^="Contact card for "]';
   var PERSONA_PREFIX = /^(?:Opens|Open|Contact) card for /i;
+  // No guest row needs a text node or a label this long; a hostile
+  // description might, and it is not worth scanning for addresses.
+  var MAX_TEXT_NODE = 10000;
 
   var STATUS_RULES = [
     [/\b(declined|not going|not attending)\b/i, 'declined'],
@@ -359,6 +370,9 @@
   function findTimeElements(root, now) {
     var walker = createWalker(root, NodeFilter.SHOW_TEXT);
     var seen = [];
+    // Elements already parsed without success: a description with hundreds
+    // of times in it would otherwise re-read the same ancestors for each.
+    var failed = new Set();
     var node;
     while ((node = walker.nextNode())) {
       var data = node.data;
@@ -366,7 +380,9 @@
       var el = node.parentElement;
       for (var depth = 0; el && depth < 4; depth++, el = el.parentElement) {
         if (seen.indexOf(el) >= 0) break;
+        if (failed.has(el)) continue;
         if (parseTimeRangeText(textOf(el), now)) { seen.push(el); break; }
+        failed.add(el);
       }
     }
     // Keep only the deepest matches.
@@ -392,7 +408,8 @@
    */
   function collectAttendees(container, opts) {
     opts = opts || {};
-    var byKey = {};
+    // Keyed by addresses and names from the page: never a plain object.
+    var byKey = Object.create(null);
     var order = [];
 
     function add(email, el, fromAttribute) {
@@ -430,7 +447,7 @@
       // Outlook renders each person as two persona buttons with the same
       // label (the avatar and the name), so group by name first.
       var personas = container.querySelectorAll(PERSONA_SELECTOR);
-      var groups = {};
+      var groups = Object.create(null);
       var groupOrder = [];
       for (i = 0; i < personas.length; i++) {
         el = personas[i];
@@ -478,13 +495,14 @@
       var links = container.querySelectorAll('a[href^="mailto:"]');
       for (i = 0; i < links.length; i++) {
         el = links[i];
-        add(decodeURIComponent((el.getAttribute('href') || '').replace(/^mailto:/i, '').split('?')[0]), el, true);
+        add(safeDecode((el.getAttribute('href') || '').replace(/^mailto:/i, '').split('?')[0]), el, true);
       }
 
       var labelled = container.querySelectorAll('[title], [aria-label]');
       for (i = 0; i < labelled.length; i++) {
         el = labelled[i];
         var text = (el.getAttribute('title') || '') + ' ' + (el.getAttribute('aria-label') || '');
+        if (text.length > MAX_TEXT_NODE) continue;
         var found = text.match(EMAIL_G);
         if (found && found.length === 1) add(found[0], el, true);
       }
@@ -492,7 +510,7 @@
       var walker = createWalker(container, NodeFilter.SHOW_TEXT);
       var node;
       while ((node = walker.nextNode())) {
-        if (node.data.indexOf('@') < 0) continue;
+        if (node.data.indexOf('@') < 0 || node.data.length > MAX_TEXT_NODE) continue;
         var emails = node.data.match(EMAIL_G);
         if (!emails) continue;
         for (i = 0; i < emails.length; i++) add(emails[i], node.parentElement, false);

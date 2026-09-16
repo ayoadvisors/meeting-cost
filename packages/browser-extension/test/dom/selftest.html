@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Meeting Cost self-test</title>
+<style>
+  body { margin: 0; padding: 20px; font: 14px/20px system-ui, sans-serif; color: #202124; background: #f1f3f4; }
+  h1 { font-size: 18px; margin: 0 0 8px; }
+  #results { background: #fff; border: 1px solid #dadce0; border-radius: 8px; padding: 12px 16px; white-space: pre-wrap; }
+  .fixtures { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; margin-top: 20px; }
+  [role="dialog"] { background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(60,64,67,.3); padding: 12px 16px; overflow: hidden; }
+  [role="dialog"] h2 { font-size: 20px; font-weight: 400; margin: 0 0 4px; }
+  .when { margin-bottom: 8px; }
+  .guest { display: flex; gap: 8px; align-items: center; padding: 2px 0; }
+  .muted { color: #5f6368; font-size: 12px; }
+  .desc { max-height: 60px; overflow: auto; color: #5f6368; font-size: 11px; }
+  .persona { cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>Meeting Cost self-test</h1>
+<p class="muted">The extension's real content scripts run on the fixtures below. Verdicts appear in the box; scripts/browser-test.js reads them from a headless browser.</p>
+<pre id="results">running…</pre>
+
+<div class="fixtures">
+
+  <!-- F1: replica of the Google Calendar bubble, five guests, upcoming -->
+  <div role="dialog" id="f1" aria-label="Marketing Sync">
+    <h2 role="heading" aria-level="2">Marketing Sync</h2>
+    <div class="when">Thursday, February 2, 2099 &#8901; 11:00am &#8211; 12:00pm</div>
+    <div>5 guests</div>
+    <div role="list">
+      <div role="listitem" data-hovercard-id="john.smith@acme.com" class="guest"><span aria-hidden="true">JS</span><div><div>John Smith</div><div class="muted">Organizer</div></div><span role="img" aria-label="Accepted">&#10003;</span></div>
+      <div role="listitem" data-hovercard-id="olivia.jones@acme.com" class="guest"><span aria-hidden="true">OJ</span><div>Olivia Jones</div><span role="img" aria-label="Accepted">&#10003;</span></div>
+      <div role="listitem" data-hovercard-id="justin.mendel@acme.com" class="guest"><span aria-hidden="true">JM</span><div>Justin Mendel</div><span role="img" aria-label="Awaiting">?</span></div>
+      <div role="listitem" data-hovercard-id="vera.katts@acme.com" class="guest"><span aria-hidden="true">VK</span><div>Vera Katts</div><span role="img" aria-label="Accepted">&#10003;</span></div>
+      <div role="listitem" data-hovercard-id="alex.jones@acme.com" class="guest"><span aria-hidden="true">AJ</span><div>Alex Jones</div><span role="img" aria-label="Accepted">&#10003;</span></div>
+    </div>
+  </div>
+
+  <!-- F2: Outlook peek with persona buttons whose names are Object.prototype keys -->
+  <div role="dialog" id="f2">
+    <h2>Prototype review</h2>
+    <div class="when"><span aria-label="Time">Thu 2/2/2099 11:00 AM - 12:00 PM</span></div>
+    <div class="guest"><span class="persona" role="button" aria-label="Opens card for constructor">constructor</span>, <span class="muted">Organizer</span></div>
+    <div class="guest"><span class="persona" role="button" aria-label="Opens card for __proto__">__proto__</span>, <span class="muted">Accepted</span></div>
+    <div class="guest"><span class="persona" role="button" aria-label="Opens card for toString">toString</span>, <span class="muted">Tentative</span></div>
+    <div class="guest"><span class="persona" role="button" aria-label="Opens card for Olivia Jones">Olivia Jones</span>, <span class="muted">Accepted</span></div>
+  </div>
+
+  <!-- F3: a calendar without people chips: mailto links (two malformed), a scripty title, a huge text node with addresses -->
+  <div role="dialog" id="f3">
+    <h2 id="f3title">Q3 &lt;img src=x onerror=alert(1)&gt; plan &lt;script&gt;alert(2)&lt;/script&gt;</h2>
+    <div class="when">Thursday, February 2, 2099 &#8901; 2:00 &#8211; 3:00pm</div>
+    <div class="guest"><a href="mailto:%E0%A4%A@x.com">broken link</a></div>
+    <div class="guest"><a href="mailto:%zz@x.com">broken link 2</a></div>
+    <div class="guest"><a href="mailto:ok@x.com">ok@x.com</a></div>
+    <div class="guest"><a href="mailto:two@x.com">two@x.com</a></div>
+    <div class="desc" id="f3desc"></div>
+  </div>
+
+  <!-- F4: a description stuffed with times; the real "when" line comes first -->
+  <div role="dialog" id="f4">
+    <h2>Big description</h2>
+    <div class="when">Thursday, February 2, 2099 &#8901; 4:00 &#8211; 5:00pm</div>
+    <div role="list">
+      <div role="listitem" data-hovercard-id="a@x.com" class="guest"><div>Ann Adams</div></div>
+      <div role="listitem" data-hovercard-id="b@x.com" class="guest"><div>Bob Brown</div></div>
+    </div>
+    <div class="desc" id="f4desc"></div>
+  </div>
+
+  <!-- F5: one person only: no widget -->
+  <div role="dialog" id="f5">
+    <h2>Focus time</h2>
+    <div class="when">Thursday, February 2, 2099 &#8901; 9:00 &#8211; 10:00am</div>
+    <div role="list">
+      <div role="listitem" data-hovercard-id="solo@x.com" class="guest"><div>Solo Person</div></div>
+    </div>
+  </div>
+
+  <!-- F6: a guest row keyed by a non-address, a resource, and a declined guest -->
+  <div role="dialog" id="f6">
+    <h2>Room booking</h2>
+    <div class="when">Thursday, February 2, 2099 &#8901; 1:00 &#8211; 1:30pm</div>
+    <div role="list">
+      <div role="listitem" data-hovercard-id="constructor" class="guest"><div>Not An Address</div></div>
+      <div role="listitem" data-hovercard-id="c@x.com" class="guest"><div>Cal Cooper</div></div>
+      <div role="listitem" data-hovercard-id="d@x.com" class="guest"><div>Dee Dawson</div><span role="img" aria-label="Declined">&#10007;</span></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Fixture content that is tedious to write by hand.
+  (function () {
+    var spam = [];
+    for (var i = 0; i < 2000; i++) spam.push('spam' + i + '@x.com');
+    document.getElementById('f3desc').textContent = spam.join(' ');   // ~30k chars, one text node
+
+    var frag = document.createDocumentFragment();
+    for (var j = 0; j < 300; j++) {
+      var s = document.createElement('span');
+      s.textContent = 'Call ' + j + ' at 10:00 AM or maybe 11:00 AM, TBD. ';
+      frag.appendChild(s);
+    }
+    document.getElementById('f4desc').appendChild(frag);
+  })();
+
+  window.MC_DEMO_PROVIDER = 'google';
+  window.MC_DEMO_CONFIG = {
+    currency: 'USD',
+    locale: 'en-US',
+    tickSeconds: 60,
+    defaultHourlyRate: 100,
+    rates: {
+      'john.smith@acme.com': 144.23,
+      'olivia.jones@acme.com': 144.23,
+      'justin.mendel@acme.com': 84.3,
+      'vera.katts@acme.com': 120.19,
+      'alex.jones@acme.com': 110.3,
+      'Olivia Jones': 144.23
+    }
+  };
+</script>
+
+<!-- the extension, exactly as shipped -->
+<link rel="stylesheet" href="../../src/content/widget.css">
+<script src="../../src/vendor/meeting-cost-core.js"></script>
+<script src="../../src/content/extract.js"></script>
+<script src="../../src/content/widget.js"></script>
+<script src="../../src/content/main.js"></script>
+
+<script>
+  (function () {
+    var out = [];
+    var pass = 0, fail = 0;
+    function check(name, ok, detail) {
+      if (ok) { pass++; out.push('PASS ' + name); }
+      else { fail++; out.push('FAIL ' + name + (detail !== undefined ? ': ' + detail : '')); }
+    }
+    function mountIn(id) {
+      var el = document.getElementById(id);
+      var found = window.__meetingCost.getMounts().filter(function (m) { return el.contains(m.handle.row); });
+      return found.length === 1 ? found[0] : (found.length ? { many: found.length } : null);
+    }
+    function names(m) { return m.handle.getComputed().people.map(function (p) { return p.name; }); }
+
+    try {
+      var mc = window.__meetingCost;
+      check('content scripts loaded and picked the Google provider', mc && mc.provider === 'google');
+
+      var t0 = performance.now();
+      mc.rescan();
+      var ms = performance.now() - t0;
+      check('full page scan under 1500 ms', ms < 1500, ms.toFixed(0) + ' ms');
+
+      var mounts = mc.getMounts();
+      check('exactly five widgets mounted (F1, F2, F3, F4, F6)', mounts.length === 5, mounts.length);
+
+      var f1 = mountIn('f1');
+      check('F1 Google bubble: widget mounted once', f1 && !f1.many, JSON.stringify(f1 && f1.many));
+      if (f1 && !f1.many) {
+        var c1 = f1.handle.getComputed();
+        check('F1 headline is $603.25 (the numbers from the post)', c1.headline === '$603.25', c1.headline);
+        check('F1 phase is upcoming', c1.phase === 'upcoming', c1.phase);
+        check('F1 five people, five annotations', c1.people.length === 5 && document.querySelectorAll('#f1 .mc-annot').length === 5,
+          c1.people.length + ' people, ' + document.querySelectorAll('#f1 .mc-annot').length + ' annotations');
+        check('F1 organizer detected', c1.people[0].organizer === true);
+        check('F1 awaiting guest reads as pending', c1.people[2].status === 'pending', c1.people[2].status);
+        check('F1 widget sits before the guest list', f1.handle.row.nextElementSibling && f1.handle.row.nextElementSibling.getAttribute('role') === 'list');
+        check('F1 label text is the cost line', f1.handle.row.textContent.indexOf('cost of meeting') >= 0);
+      }
+
+      var f2 = mountIn('f2');
+      check('F2 Outlook personas named constructor/__proto__/toString: widget mounted', f2 && !f2.many);
+      if (f2 && !f2.many) {
+        var n2 = names(f2);
+        check('F2 all four people kept', n2.length === 4 && n2.indexOf('constructor') >= 0 && n2.indexOf('__proto__') >= 0 && n2.indexOf('toString') >= 0, JSON.stringify(n2));
+        var c2 = f2.handle.getComputed();
+        check('F2 headline is $444.23 (3 x default + Olivia by name)', c2.headline === '$444.23', c2.headline);
+        check('F2 organizer sentence read', c2.people.some(function (p) { return p.name === 'constructor' && p.organizer; }));
+      }
+
+      var f3 = mountIn('f3');
+      check('F3 malformed mailto links do not break extraction', f3 && !f3.many);
+      if (f3 && !f3.many) {
+        var emails = f3.handle.getComputed().people.map(function (p) { return p.email; });
+        check('F3 real mailto guests found', emails.indexOf('ok@x.com') >= 0 && emails.indexOf('two@x.com') >= 0, JSON.stringify(emails));
+        check('F3 30k-char text node of addresses ignored', !emails.some(function (e) { return /^spam/.test(e); }), emails.length + ' addresses');
+        check('F3 scripty title rendered as text only', !f3.handle.row.querySelector('img, script') && !document.querySelector('#f3 img, #f3 script'));
+        var draft = window.MeetingCostCore.buildEmailDraft({ title: document.getElementById('f3title').textContent, computed: f3.handle.getComputed() });
+        var url = window.MeetingCostCore.composeUrl.gmail(draft);
+        check('F3 compose URL is a Gmail link with the title encoded', url.indexOf('https://mail.google.com/mail/?view=cm') === 0 && url.indexOf('<') < 0 && url.indexOf('%3Cimg') > 0, url.slice(0, 80));
+      }
+
+      var f4 = mountIn('f4');
+      check('F4 description with 600 times: exactly one widget', f4 && !f4.many, JSON.stringify(f4 && f4.many));
+      if (f4 && !f4.many) {
+        var c4 = f4.handle.getComputed();
+        check('F4 uses the real when-line (4:00 pm)', c4.start.getHours() === 16 && c4.durationMinutes === 60, c4.start + ' / ' + c4.durationMinutes);
+      }
+
+      check('F5 single-person event shows no widget', mountIn('f5') === null);
+
+      var f6 = mountIn('f6');
+      check('F6 non-address chip ignored, declined guest not counted', f6 && !f6.many);
+      if (f6 && !f6.many) {
+        var c6 = f6.handle.getComputed();
+        check('F6 two people, one counted', c6.people.length === 2 && c6.countedPeople === 1, c6.people.length + ' / ' + c6.countedPeople);
+        check('F6 annotation says not counted', /not counted/.test(document.querySelector('#f6').textContent));
+      }
+
+      check('Object.prototype untouched', ({}).els === undefined && ({}).hourly === undefined && ({}).persona === undefined && Object.keys(Object.prototype).length === 0);
+
+      // Tear down and make sure nothing of ours is left behind.
+      mc.stop();
+      check('stop() removes every injected node', document.querySelectorAll('[data-mc]').length === 0, document.querySelectorAll('[data-mc]').length);
+    } catch (err) {
+      check('no exception while checking', false, String(err && err.stack || err));
+    }
+
+    out.push(pass + ' passed, ' + fail + ' failed');
+    document.getElementById('results').textContent = out.join('\n');
+    document.title = (fail ? 'FAIL: ' : 'PASS: ') + 'Meeting Cost self-test';
+  })();
+</script>
+</body>
+</html>

@@ -3,8 +3,7 @@
   'use strict';
 
   var core = window.MeetingCostCore;
-  var api = typeof browser !== 'undefined' ? browser : chrome;
-  var storage = api && api.storage && api.storage.sync;
+  var store = window.MeetingCostStorage;
 
   var $ = function (id) { return document.getElementById(id); };
   var fields = ['defaultHourlyRate', 'currency', 'hoursPerYear', 'overheadMultiplier', 'tickSeconds',
@@ -34,7 +33,7 @@
 
   function showErrors(errors) {
     $('errors').textContent = errors.map(function (e) {
-      return 'Line ' + e.line + ': ' + e.message + '  →  ' + e.text.trim();
+      return 'Line ' + e.line + ': ' + e.message + '  →  ' + e.text.trim().slice(0, 120);
     }).join('\n');
   }
 
@@ -43,7 +42,7 @@
     showErrors(current.errors);
     var cfg = current.config;
     var sample = Object.keys(cfg.rates).filter(function (k) { return k.charAt(0) !== '@'; }).slice(0, 5)
-      .map(function (email) { return { email: email }; });
+      .map(function (key) { return key.indexOf('name:') === 0 ? { name: key.slice(5) } : { email: key }; });
     while (sample.length < 5) sample.push({ email: 'guest' + (sample.length + 1) + '@example.com' });
     var start = new Date(2030, 0, 1, 11, 0);
     var end = new Date(2030, 0, 1, 12, 0);
@@ -58,12 +57,10 @@
     p.appendChild(document.createTextNode(' (' + core.formatMoney(computed.perMinute, cfg) + ' per minute).'));
     box.appendChild(p);
     var who = document.createElement('div');
+    who.className = 'who';
     who.textContent = computed.people.map(function (person) {
-      return person.email + ': ' + core.formatMoney(person.hourlyRate, cfg) + '/hr (' + person.rateSource + ')';
+      return (person.email || person.name) + ': ' + core.formatMoney(person.hourlyRate, cfg) + '/hr (' + person.rateSource + ')';
     }).join('  ·  ');
-    who.style.color = '#5f6368';
-    who.style.fontSize = '12px';
-    who.style.marginTop = '6px';
     box.appendChild(who);
   }
 
@@ -77,15 +74,16 @@
     var current = read();
     showErrors(current.errors);
     if (current.errors.length) { flash(''); return; }
-    if (!storage) { flash('Storage unavailable'); return; }
-    storage.set({ config: current.config }, function () {
-      flash(api.runtime && api.runtime.lastError ? 'Could not save: ' + api.runtime.lastError.message : 'Saved');
+    store.save(current.config, function (err) {
+      flash(err ? 'Could not save: ' + err.message : 'Saved');
     });
   });
 
   $('reset').addEventListener('click', function () {
     fill({});
-    if (storage) storage.remove('config', function () { flash('Defaults restored'); });
+    store.clear(function (err) {
+      flash(err ? 'Could not delete: ' + err.message : 'Defaults restored, saved rates deleted');
+    });
   });
 
   document.querySelectorAll('input, select, textarea').forEach(function (input) {
@@ -93,9 +91,5 @@
     input.addEventListener('change', preview);
   });
 
-  if (storage) {
-    storage.get('config', function (result) { fill(result && result.config ? result.config : {}); });
-  } else {
-    fill({});
-  }
+  store.load(function (raw) { fill(raw || {}); });
 })();

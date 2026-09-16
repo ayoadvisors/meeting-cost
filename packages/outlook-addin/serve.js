@@ -6,6 +6,8 @@
  *
  *   npm run certs   # once
  *   npm start       # https://localhost:3000
+ *
+ * Loopback only, no dot-files, no paths outside this folder.
  */
 'use strict';
 const fs = require('fs');
@@ -23,29 +25,41 @@ const TYPES = {
   '.md': 'text/markdown; charset=utf-8'
 };
 
+function send(res, status, type, body) {
+  res.writeHead(status, { 'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+  res.end(body);
+}
+
 function handler(req, res) {
-  const urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
-  let file = path.normalize(path.join(ROOT, urlPath === '/' ? '/src/taskpane.html' : urlPath));
-  if (!file.startsWith(ROOT)) { res.writeHead(403); return res.end(); }
+  let urlPath;
+  try { urlPath = decodeURIComponent((req.url || '/').split('?')[0]); }
+  catch (err) { return send(res, 400, 'text/plain', 'bad request'); }
+  if (urlPath === '/') urlPath = '/src/taskpane.html';
+  if (urlPath.split('/').some((seg) => seg.startsWith('.'))) return send(res, 404, 'text/plain', 'not found');
+  const file = path.normalize(path.join(ROOT, urlPath));
+  if (!file.startsWith(ROOT + path.sep)) return send(res, 403, 'text/plain', 'forbidden');
   fs.readFile(file, (err, data) => {
-    if (err) { res.writeHead(404, { 'Content-Type': 'text/plain' }); return res.end('not found: ' + urlPath); }
-    res.writeHead(200, {
-      'Content-Type': TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream',
-      'Cache-Control': 'no-store',
-      'Access-Control-Allow-Origin': '*'
-    });
-    res.end(data);
+    if (err) return send(res, 404, 'text/plain', 'not found: ' + urlPath);
+    send(res, 200, TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream', data);
   });
 }
 
 const certFile = path.join(CERT_DIR, 'localhost.crt');
 const keyFile = path.join(CERT_DIR, 'localhost.key');
 
+let make;
+let url;
 if (fs.existsSync(certFile) && fs.existsSync(keyFile)) {
-  https.createServer({ cert: fs.readFileSync(certFile), key: fs.readFileSync(keyFile) }, handler)
-    .listen(PORT, () => console.log('Meeting Cost add-in at https://localhost:' + PORT + '/src/taskpane.html'));
+  const tls = { cert: fs.readFileSync(certFile), key: fs.readFileSync(keyFile) };
+  make = () => https.createServer(tls, handler);
+  url = 'https://localhost:' + PORT + '/src/taskpane.html';
 } else {
   console.warn('No dev certificate found in ' + CERT_DIR + '. Run "npm run certs" first; Outlook refuses plain HTTP.');
-  http.createServer(handler)
-    .listen(PORT, () => console.log('Serving over plain HTTP (for a quick look only) at http://localhost:' + PORT + '/src/taskpane.html'));
+  make = () => http.createServer(handler);
+  url = 'http://localhost:' + PORT + '/src/taskpane.html (plain HTTP, for a quick look only)';
 }
+
+make().listen(PORT, '127.0.0.1', () => console.log('Meeting Cost add-in at ' + url));
+const v6 = make();
+v6.on('error', () => { /* no IPv6 loopback here */ });
+v6.listen(PORT, '::1');
