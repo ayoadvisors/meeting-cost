@@ -26,7 +26,11 @@ overrun grace period expires.
 4. Click the toolbar icon (or the extension's *Options*) and enter hourly rates.
 5. Open any event in Google Calendar or Outlook on the web.
 
-`node scripts/package-extension.js` produces `dist/meeting-cost-extension.zip` for store submission.
+`npm run package` (from the repo root) produces `dist/meeting-cost-chrome-<version>.zip`
+for the Chrome Web Store and Edge Add-ons and `dist/meeting-cost-firefox-<version>.zip`
+for Firefox Add-ons, each with a manifest written for that browser;
+`npm run validate` runs the store pre-flight on them. The listing text, images
+and step-by-step publishing notes are in `../../store/`.
 
 ## How it finds the event
 
@@ -113,18 +117,22 @@ and the total ticked once the meeting started.
 |---|---|
 | `manifest.json` | MV3 manifest; content scripts on Google Calendar and Outlook web hosts |
 | `src/vendor/meeting-cost-core.js` | shared engine (copied from `packages/core`) |
+| `src/storage.js` | the rate table in `chrome.storage.local` (never sync), with a one-time migration off sync |
 | `src/content/extract.js` | time-range parsing and DOM heuristics |
 | `src/content/widget.js` | the injected row and guest annotations |
 | `src/content/main.js` | provider detection, config loading, mount lifecycle |
 | `src/content/widget.css` | styles (Google and Outlook variants, dark mode) |
-| `src/options/` | the rates page (`chrome.storage.sync`) |
+| `src/options/` | the rates page (external stylesheet; the manifest's CSP allows nothing inline) |
 | `src/background.js` | toolbar icon opens the options page |
-| `test/extract.test.js` | parser tests (`npm test` at the repo root) |
+| `test/extract.test.js` | parser tests, including adversarial inputs (`npm test` at the repo root) |
+| `test/dom/selftest.html` | the real scripts against replica and hostile fixtures (`npm run test:dom`, headless Chrome/Edge) |
 | `../../demo/index.html` | a replica of the Google Calendar bubble running these exact scripts |
 
 ## Settings
 
-All in the options page and stored in `chrome.storage.sync`:
+All in the options page and stored in `chrome.storage.local`, on this device only
+(a copy left in sync storage by an earlier build is moved to local storage
+once and deleted from sync; "Reset and delete saved rates" removes both):
 
 | Setting | Default | Notes |
 |---|---|---|

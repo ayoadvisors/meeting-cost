@@ -1,0 +1,8 @@
+# The project has no npm dependencies; the only third-party code in the
+# pipeline is the GitHub Actions used by CI. Keep those current.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

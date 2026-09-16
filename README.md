@@ -1,5 +1,8 @@
 # Meeting Cost
 
+[![CI](https://github.com/ayoadvisors/meeting-cost/actions/workflows/ci.yml/badge.svg)](https://github.com/ayoadvisors/meeting-cost/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/ayoadvisors/meeting-cost/actions/workflows/codeql.yml/badge.svg)](https://github.com/ayoadvisors/meeting-cost/actions/workflows/codeql.yml)
+
 > A calendar plugin that shows the combined hourly salary of everyone in a
 > meeting, in real time. Updates every minute. Let's see how long that
 > "quick sync" lasts when the screen says $603 and rising.
@@ -24,14 +27,18 @@ draft addressed to the guests with the cost spelled out.
 
 | Piece | Verified how |
 |---|---|
-| Core | 24 unit tests, including the post's exact numbers |
+| Core | 32 unit tests, including the post's exact numbers and adversarial inputs (hostile names, pathological rate lines, oversized titles) |
 | Extension on Google Calendar | installed unpacked and run on a live calendar.google.com account: correct guests, statuses, organizer, date, position in the popup, survives Google's own re-render, tears down on close, hides on solo events, the email button drafts to everyone but you, and saving a `@domain` rate in the options page updates the open popup without a reload |
 | Extension on Outlook web | run on a live Microsoft 365 account (`outlook.cloud.microsoft`) against a two-person meeting: widget in the peek, both people annotated, organizer and external guest told apart from Outlook's one-sentence RSVP summary, live ticking once the meeting started; plus the fixtures in `demo/outlook.html` |
 | Google Workspace add-on, Outlook add-in | written against the documented APIs, not yet deployed to a real account |
+| Security | red-team review in [docs/security-review.md](docs/security-review.md): 12 findings fixed, adversarial unit tests, a headless DOM self-test with hostile fixtures (`npm run test:dom`) |
+| Store package | `npm run build` produces the Chrome/Edge and Firefox zips and runs the Chrome Web Store pre-flight (`npm run validate`); listing text and images are in [store/](store/) |
 
-To try the extension on a real calendar without installing it, run
-`node scripts/build-inject.js` and paste `dist/inject.js` into the DevTools
-console on calendar.google.com, then open an event.
+For developers only: `node scripts/build-inject.js` builds a console-pastable
+copy of the content scripts (`dist/inject.js`) for testing the heuristics
+against a live calendar without installing anything. Browsers warn about
+pasting code into the DevTools console for good reason; never paste code you
+have not read.
 
 ## Try it in 30 seconds
 
@@ -88,15 +95,23 @@ Exact e-mail wins over a name, which wins over `@domain`, which wins over
 the default. Names matter because Outlook on the web never puts an e-mail
 address in its event popup; people appear by display name only.
 
-## Privacy
+## Privacy and security
 
-Nothing leaves the user's device or account. The extension stores rates in
-`chrome.storage.sync`; the Workspace add-on in the user's script properties;
-the Outlook add-in in mailbox roaming settings. No servers, no analytics, no
-third-party scripts (Office.js from Microsoft's CDN is the one required load).
+Nothing leaves the user's device. The extension stores rates in
+`chrome.storage.local` (never sync, so they are not copied to the browser
+vendor's servers); the Workspace add-on in the user's script properties; the
+Outlook add-in in mailbox roaming settings. No servers, no analytics, no
+third-party scripts (Office.js from Microsoft's CDN is the one required
+load), and the extension's own pages carry a content security policy that
+forbids network connections outright.
 
 Salaries are sensitive: the intended use is your own team's numbers, or
 domain-level averages, on your own machine.
+
+- [PRIVACY.md](PRIVACY.md): the privacy policy the store listing links to.
+- [SECURITY.md](SECURITY.md): how to report a vulnerability.
+- [docs/security-review.md](docs/security-review.md): the threat model, every
+  finding of the September 2026 red-team review, and what was changed.
 
 ## Repo layout
 
@@ -104,24 +119,43 @@ domain-level averages, on your own machine.
 packages/
   core/                    shared engine + unit tests
   browser-extension/       MV3 extension (Google Calendar, Outlook web) + parser tests
+                           + test/dom/selftest.html (real scripts on replica and hostile fixtures)
   google-workspace-addon/  Apps Script add-on (appsscript.json, Code.js)
   outlook-addin/           Office add-in (manifest.xml, task pane)
 demo/                      replica of the Google Calendar bubble running the extension
+store/                     Chrome Web Store listing text, publishing steps, screenshots and tiles
+docs/                      security review
 scripts/
   sync-core.js             copy core into each package (they ship self-contained)
   make-icons.js            generate the PNG icons (no image libraries)
   check.js                 syntax / JSON / manifest sanity checks
-  package-extension.js     zip the extension for store upload
+  package-extension.js     build dist/meeting-cost-{chrome,firefox}-<version>.zip + SHA256SUMS
+  validate-extension.js    Chrome Web Store pre-flight on the sources and the zips
+  browser-test.js          run the DOM self-test in a headless Chrome/Edge
+  make-store-assets.js     render the listing screenshots and promo tiles
   build-inject.js          console-injectable build for trying it on a live calendar
   build-demo.js            single-file demo bundle
-  serve.js                 static server for the demo
+  serve.js                 static server for the demo (loopback only)
+  lib/                     zip writer, PNG codec, headless-browser helper
+.github/                   CI (check, tests, DOM self-test, package, validate, release on tag), CodeQL, Dependabot
 ```
 
 ```bash
-npm test                 # 24 unit tests: cost math, rate parsing, time-range parsing
+npm test                 # 32 unit tests: cost math, rate parsing, time-range parsing, adversarial inputs
+npm run test:dom         # 28 DOM checks in a headless Chrome/Edge (skipped when none is installed)
 npm run check            # parse every file, validate manifests, verify core copies
-npm run build            # sync-core + icons + check + test
+npm run package          # dist/meeting-cost-chrome-1.0.0.zip, dist/meeting-cost-firefox-1.0.0.zip
+npm run validate         # Chrome Web Store pre-flight on the sources and the zips
+npm run store:assets     # store/assets/*.png (needs Chrome or Edge)
+npm run build            # everything above except the assets
 ```
+
+## Publishing
+
+[store/PUBLISHING.md](store/PUBLISHING.md) walks through the developer
+dashboard; [store/listing.md](store/listing.md) has every field's text and
+the privacy-practices answers. Pushing a `vX.Y.Z` tag makes CI attach the
+packages to a GitHub release.
 
 ## Other providers
 

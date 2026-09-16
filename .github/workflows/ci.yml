@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: check, test, package, validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Core copies are in sync
+        run: npm run sync-core:check
+
+      - name: Syntax, JSON and manifest checks
+        run: npm run check
+
+      - name: Unit tests (incl. adversarial inputs)
+        run: npm test
+
+      - name: DOM self-test in headless Chrome
+        run: npm run test:dom -- --require
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+
+      - name: Build store packages
+        run: npm run package
+
+      - name: Chrome Web Store pre-flight
+        run: npm run validate
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: meeting-cost-packages
+          path: |
+            dist/*.zip
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+
+  release:
+    name: GitHub release for a version tag
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Tag matches the manifest version
+        run: |
+          v="$(node -p "require('./packages/browser-extension/manifest.json').version")"
+          test "v$v" = "${GITHUB_REF_NAME}" || { echo "tag ${GITHUB_REF_NAME} but manifest is $v"; exit 1; }
+
+      - name: Build store packages
+        run: npm run package && npm run validate
+
+      - name: Create the release with the packages attached
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" dist/*.zip dist/SHA256SUMS.txt \
+            --title "Meeting Cost ${GITHUB_REF_NAME}" \
+            --notes "Store packages built by CI from ${GITHUB_SHA}. Checksums in SHA256SUMS.txt. See CHANGELOG.md."
