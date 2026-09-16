@@ -25,6 +25,17 @@
   <h1>Meeting Cost demo, Outlook flavour</h1>
   <p class="lede">A stand-in for the event peek on Outlook on the web, using the markup seen on a real account: the time line is a <code>span[aria-label="Time"]</code> in <code>Thu 9/17/2026 4:00 PM - 4:30 PM</code> form, and every person is a "persona" button labelled <code>Opens card for Name</code> with their RSVP as plain text. No e-mail address appears anywhere, so rates are matched by name.</p>
 
+  <!-- Organizer's view of a meeting: one sentence for everyone, an external guest labelled by address. -->
+  <div class="peek" style="margin-bottom:20px">
+    <div class="subject">Meeting Cost test</div>
+    <!-- As on the real page, the subject sits outside the block that holds the time and the people. -->
+    <div class="body">
+      <div class="time"><span aria-label="Time" id="when2">Tue 9/15/2026 11:00 PM - 11:30 PM</span></div>
+      <div class="person"><span class="avatar" role="button" aria-label="Opens card for Ben Brown">BB</span><span>You're the organizer, <span role="button" aria-label="Opens card for pat.lee@example.com">pat.lee@example.com</span> didn't respond</span></div>
+      <a class="link" href="#" onclick="return false">Join</a>
+    </div>
+  </div>
+
   <div class="peek">
     <div class="subject">Curriculum Committee sync</div>
     <div class="time"><span aria-label="Time" id="when">Thu 9/17/2026 4:00 PM - 4:30 PM</span></div>

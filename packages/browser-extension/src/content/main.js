@@ -77,7 +77,7 @@
       ev.title,
       ev.start.getTime(),
       ev.end.getTime(),
-      ev.attendees.map(function (a) { return a.email; }).sort().join(',')
+      ev.attendees.map(function (a) { return a.email || a.name; }).sort().join(',')
     ].join('|');
   }
 
@@ -89,7 +89,7 @@
 
     events.forEach(function (ev) {
       if (ev.attendees.length < MIN_ATTENDEES) return;
-      if (me) ev.attendees.forEach(function (a) { a.self = a.email === me; });
+      if (me) ev.attendees.forEach(function (a) { a.self = a.self || a.email === me; });
       var sig = signatureOf(ev);
       var existing = null;
       for (var i = 0; i < mounts.length; i++) {

@@ -93,8 +93,19 @@ The extractor was run on a live Microsoft 365 account (a university tenant):
 - Google's people chips take precedence over persona buttons, and both take
   precedence over addresses found in free text, so descriptions never add guests.
 
-The multi-attendee case on Outlook was verified against `demo/outlook.html`,
-which mirrors that markup; the live account had only single-person appointments.
+- In the **organizer's view** Outlook writes one sentence for everyone
+  ("You're the organizer, jane@x.com didn't respond"), so each persona's
+  status is the text that follows it up to the next persona. "You" in that
+  text marks the current user. A guest without a display name is a persona
+  labelled by address; that address is kept, so e-mail rates and the draft's
+  recipients still work for them.
+- Text walkers must include elements in `whatToShow`, or the filter that
+  skips the widget's own nodes is never consulted and the title search reads
+  "cost of meeting" back from the widget.
+
+Verified live on a two-person meeting: the row appeared in the peek, both
+people were annotated, the organizer and the external guest were told apart,
+and the total ticked once the meeting started.
 
 ## Files
 

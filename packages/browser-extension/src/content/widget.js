@@ -119,24 +119,31 @@
       spec.attendees.forEach(function (a) {
         var person = byKey[personKey(a)];
         if (!person || !a.rowEl || !a.rowEl.isConnected) return;
-        var existing = a.rowEl.querySelector('[data-mc="annot"]');
         var text = ' (' + core.formatMoney(person.hourlyRate, config) + ' per hour' +
           (person.counted ? '' : ', not counted') + ')';
-        if (existing) { existing.textContent = text; return; }
-        var nameNode = extract.findNameTextNode(a.rowEl);
-        if (!nameNode) return;
+        // Each attendee owns exactly one annotation; several people can share
+        // a row (Outlook's organizer sentence), so never look it up by row.
+        if (a.mcSpan && a.mcSpan.isConnected) { a.mcSpan.textContent = text; return; }
         var span = el('span', 'mc-annot', text);
+        a.mcSpan = span;
         span.setAttribute('data-mc', 'annot');
         span.title = person.rateSource === 'default'
           ? 'Default rate. Set a real one in the Meeting Cost options.'
           : 'Rate from your Meeting Cost options (' + person.rateSource + ' match)';
-        // When the name sits inside a clickable persona (Outlook's "Opens card
-        // for..." button), annotate next to the button, not inside it.
-        var host = nameNode.parentElement && nameNode.parentElement.closest('[role="button"], button, a');
-        if (host && host !== a.rowEl && a.rowEl.contains(host) && host.parentNode) {
-          host.parentNode.insertBefore(span, host.nextSibling);
+        if (a.persona && a.el && a.el.parentNode) {
+          // Outlook persona button: annotate right after it, since several
+          // people can share one sentence.
+          a.el.parentNode.insertBefore(span, a.el.nextSibling);
         } else {
-          nameNode.parentNode.insertBefore(span, nameNode.nextSibling);
+          var nameNode = extract.findNameTextNode(a.rowEl);
+          if (!nameNode) return;
+          // When the name sits inside a clickable element, annotate next to it, not inside it.
+          var host = nameNode.parentElement && nameNode.parentElement.closest('[role="button"], button, a');
+          if (host && host !== a.rowEl && a.rowEl.contains(host) && host.parentNode) {
+            host.parentNode.insertBefore(span, host.nextSibling);
+          } else {
+            nameNode.parentNode.insertBefore(span, nameNode.nextSibling);
+          }
         }
         annotations.push(span);
       });

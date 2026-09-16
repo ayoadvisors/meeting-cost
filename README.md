@@ -26,7 +26,7 @@ draft addressed to the guests with the cost spelled out.
 |---|---|
 | Core | 24 unit tests, including the post's exact numbers |
 | Extension on Google Calendar | installed unpacked and run on a live calendar.google.com account: correct guests, statuses, organizer, date, position in the popup, survives Google's own re-render, tears down on close, hides on solo events, the email button drafts to everyone but you, and saving a `@domain` rate in the options page updates the open popup without a reload |
-| Extension on Outlook web | extractor run on a live Microsoft 365 account (`outlook.cloud.microsoft`): people are name-only persona buttons, RSVP text and time line parsed correctly; the multi-attendee widget verified against the matching fixture in `demo/outlook.html` |
+| Extension on Outlook web | run on a live Microsoft 365 account (`outlook.cloud.microsoft`) against a two-person meeting: widget in the peek, both people annotated, organizer and external guest told apart from Outlook's one-sentence RSVP summary, live ticking once the meeting started; plus the fixtures in `demo/outlook.html` |
 | Google Workspace add-on, Outlook add-in | written against the documented APIs, not yet deployed to a real account |
 
 To try the extension on a real calendar without installing it, run

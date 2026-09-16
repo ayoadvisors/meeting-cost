@@ -229,13 +229,19 @@
     [/\b(awaiting|pending|needs? action|no response|not responded|hasn.t responded|didn.t respond|invited)\b/i, 'pending']
   ];
 
+  /**
+   * A text-node walker that prunes skipped subtrees. Elements must be part
+   * of whatToShow, or the filter is never asked about them and cannot
+   * reject a subtree (it would happily read the widget's own text).
+   */
   function createWalker(root, whatToShow) {
     var doc = root.ownerDocument || root;
-    return doc.createTreeWalker(root, whatToShow, {
+    var wantElements = !!(whatToShow & NodeFilter.SHOW_ELEMENT);
+    return doc.createTreeWalker(root, whatToShow | NodeFilter.SHOW_ELEMENT, {
       acceptNode: function (n) {
         if (n.nodeType === 1) {
           if (n.matches(SKIP_SELECTOR)) return NodeFilter.FILTER_REJECT;
-          return (whatToShow & NodeFilter.SHOW_ELEMENT) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+          return wantElements ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
         }
         return NodeFilter.FILTER_ACCEPT;
       }
@@ -451,7 +457,16 @@
           if (others.length) break;
           row = parent;
         }
-        addPerson(group.name, group.els[group.els.length - 1], row);
+        var lastEl = group.els[group.els.length - 1];
+        if (EMAIL_EXACT.test(group.name)) {
+          // A guest without a display name is labelled by address.
+          add(group.name, lastEl, true);
+          var entry = byKey[group.name.toLowerCase()];
+          if (entry) { entry.rowEl = row; entry.persona = true; }
+        } else {
+          addPerson(group.name, lastEl, row);
+          byKey['name:' + gkey].persona = true;
+        }
       });
     }
 
@@ -488,7 +503,7 @@
       var entry = byKey[key];
       var rowEl = entry.rowEl || (entry.el.closest && entry.el.closest(ROW_SELECTOR)) || entry.el;
       if (rowEl === container) rowEl = entry.el;
-      return { email: entry.email, name: entry.name, el: entry.el, rowEl: rowEl };
+      return { email: entry.email, name: entry.name, el: entry.el, rowEl: rowEl, persona: !!entry.persona };
     });
 
     // A "row" that swallows other guests is really the whole list; shrink it.
@@ -499,16 +514,56 @@
 
     return list.map(function (a) {
       var rowText = normalizeText(textOf(a.rowEl) + ' ' + attrText(a.rowEl));
+      // Outlook's organizer view puts everyone in one sentence ("You're the
+      // organizer, jane@x.com didn't respond"), so each persona's status is
+      // the text that follows it up to the next persona.
+      var segment = a.persona ? normalizeText(trailingText(a.el, container)) : '';
+      // Personas sharing one sentence must not borrow each other's words.
+      var flagsText = a.persona && segment ? segment : rowText;
+      var statusText = segment && detectStatus(segment) !== 'unknown' ? segment : flagsText;
       return {
         email: a.email,
-        name: a.name || nameFor(a.rowEl === a.el ? a.el : a.rowEl, a.email) || nameFor(a.el, a.email),
-        status: detectStatus(rowText),
-        optional: /\boptional\b/i.test(rowText),
-        organizer: /\borgani[sz]er\b/i.test(rowText),
+        // A persona labelled by address keeps an empty name (the core derives
+        // "Pat Lee" from it) instead of scraping the sentence around it.
+        name: a.name || (a.persona ? '' : (nameFor(a.rowEl === a.el ? a.el : a.rowEl, a.email) || nameFor(a.el, a.email))),
+        status: detectStatus(statusText),
+        optional: /\boptional\b/i.test(flagsText),
+        organizer: /\borgani[sz]er\b/i.test(flagsText),
+        self: /\byou(?:'re|’re| are)?\b/i.test(flagsText),
+        persona: a.persona,
         el: a.el,
         rowEl: a.rowEl
       };
     });
+  }
+
+  /**
+   * Text that follows `el` inside the nearest ancestor that also holds other
+   * personas or status words, stopping at the next persona button. Used to
+   * read "..., You didn't respond" and "You're the organizer, ... didn't
+   * respond" sentences person by person.
+   */
+  function trailingText(el, limitEl) {
+    var scope = el.parentElement;
+    for (var up = 0; up < 5 && scope && scope !== limitEl; up++) {
+      var t = textOf(scope);
+      if (detectStatus(t) !== 'unknown' || /\borgani[sz]er\b/i.test(t)) break;
+      scope = scope.parentElement;
+    }
+    if (!scope || scope === limitEl) scope = el.parentElement || el;
+    var walker = createWalker(scope, NodeFilter.SHOW_TEXT);
+    var node;
+    var after = false;
+    var parts = [];
+    while ((node = walker.nextNode())) {
+      var parent = node.parentElement;
+      if (el.contains(node)) { after = true; continue; }
+      if (!after) continue;
+      var persona = parent && parent.closest && parent.closest(PERSONA_SELECTOR);
+      if (persona && persona !== el && !el.contains(persona)) break;
+      parts.push(node.data);
+    }
+    return parts.join(' ');
   }
 
   var NOT_TITLE_SELECTOR = DECORATIVE_SELECTOR + ', button, [role="button"], [role="toolbar"], a';
@@ -518,32 +573,50 @@
    * prominent (large) text that is not a control, an icon, an e-mail or the
    * time line. Only used for the "Send an Email Instead" subject.
    */
-  function guessTitle(container, timeEl) {
-    var heading = container.querySelector('[role="heading"], h1, h2, h3');
-    if (heading && !isSkipped(heading)) {
-      var t = normalizeText(textOf(heading));
-      if (t && !parseTimeRangeText(t)) return t;
-    }
-    var walker = createWalker(container, NodeFilter.SHOW_TEXT);
+  function titleCandidates(scope, timeEl, wantLarge) {
+    var walker = createWalker(scope, NodeFilter.SHOW_TEXT);
     var node;
-    var fallback = '';
-    var view = (container.ownerDocument && container.ownerDocument.defaultView) || null;
+    var view = (scope.ownerDocument && scope.ownerDocument.defaultView) || null;
     while ((node = walker.nextNode())) {
       if (timeEl && timeEl.contains(node)) continue;
       var parent = node.parentElement;
       if (!parent || (parent.closest && parent.closest(DECORATIVE_SELECTOR))) continue;
       var text = normalizeText(node.data);
       if (text.length < 3 || EMAIL_EXACT.test(text) || TIME_QUICK.test(text) || !/^[\w"'(\[]/.test(text)) continue;
-      // Large text is the title even when it is clickable (Outlook's subject
-      // opens the event); otherwise controls, icons and links are not titles.
-      if (view) {
-        var size = parseFloat(view.getComputedStyle(parent).fontSize) || 0;
+      if (wantLarge) {
+        // Large text is the title even when it is clickable (Outlook's
+        // subject opens the event).
+        var size = view ? (parseFloat(view.getComputedStyle(parent).fontSize) || 0) : 0;
         if (size >= 17) return text;
+        continue;
       }
+      // Plain fallback: not a control, not an RSVP sentence, not a fragment.
       if (parent.closest && parent.closest(NOT_TITLE_SELECTOR)) continue;
-      if (!fallback) fallback = text;
+      if (detectStatus(text) !== 'unknown' || /\borgani[sz]er\b/i.test(text) || /[,:;]$/.test(text)) continue;
+      return text;
     }
-    return fallback;
+    return '';
+  }
+
+  /**
+   * The event's title. A marked heading wins; then the first large text in
+   * the container or a few ancestors (the subject often sits just above the
+   * block that holds the guests); then any plain line in the container.
+   */
+  function guessTitle(container, timeEl, limitEl) {
+    var heading = container.querySelector('[role="heading"], h1, h2, h3');
+    if (heading && !isSkipped(heading)) {
+      var t = normalizeText(textOf(heading));
+      if (t && !parseTimeRangeText(t)) return t;
+    }
+    var scope = container;
+    for (var up = 0; up < 4 && scope; up++) {
+      var large = titleCandidates(scope, timeEl, true);
+      if (large) return large;
+      if (scope.matches(BOUNDARY_SELECTOR) || scope.parentElement === limitEl) break;
+      scope = scope.parentElement;
+    }
+    return titleCandidates(container, timeEl, false);
   }
 
   /**
@@ -580,21 +653,11 @@
       while (anchor.parentElement && anchor.parentElement !== container) anchor = anchor.parentElement;
       if (anchor === container || anchor.parentElement !== container) anchor = null;
 
-      // The subject may sit just outside the block that holds the guests
-      // (Outlook's peek puts it above); look a little higher when needed.
-      var title = guessTitle(container, timeEl);
-      var titleScope = container;
-      for (var upTitle = 0; !title && upTitle < 3 && titleScope.parentElement && titleScope.parentElement !== scope; upTitle++) {
-        titleScope = titleScope.parentElement;
-        title = guessTitle(titleScope, timeEl);
-        if (titleScope.matches(BOUNDARY_SELECTOR)) break;
-      }
-
       results.push({
         container: container,
         timeEl: timeEl,
         anchor: anchor,
-        title: title,
+        title: guessTitle(container, timeEl, scope),
         start: time.start,
         end: time.end,
         attendees: attendees
