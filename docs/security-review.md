@@ -79,10 +79,13 @@ practices a store listing has to certify. Sync storage also caps an item at
 8 KB, so a rate list of roughly 150 people silently failed to save.
 
 Fix: a small storage module (`src/storage.js`) that uses `storage.local`
-only. On first run it moves any sync copy left by earlier builds into local
-storage and deletes it from sync; "Reset" deletes both. The options page and
-the privacy policy now say exactly this. Consequence: rates no longer follow
-the user between machines, which is the point.
+only; "Reset" deletes the saved rates. No published version ever used sync,
+so the shipped code does not reference `storage.sync` at all (an interim
+build migrated unpacked developer installs; it was dropped before release so
+that "nothing leaves the device" is true of every line a reviewer greps, as
+Google's Web Store review checklist asks). The options page and the privacy
+policy say exactly this. Consequence: rates do not follow the user between
+machines, which is the point.
 
 ### M-1  Guest names that are `Object.prototype` keys crash or drop guests  — fixed
 
@@ -248,7 +251,7 @@ markup. The figure is an estimate from user-entered rates either way.
 |---|---|
 | `packages/core` | own-property lookups, null-prototype maps, whitespace-collapsed and capped rate lines, capped one-line e-mail title, encoded `mailto:` addresses |
 | `src/content/extract.js` | bounded e-mail regex, 10 k-char scan cap, safe URI decoding, null-prototype maps, failed-parse memo |
-| `src/storage.js` (new) | `storage.local`, one-time migration off sync, delete-all |
+| `src/storage.js` (new) | `storage.local` only, delete-all |
 | `src/content/main.js`, `src/options/*` | use the storage module; external stylesheet; "Reset and delete saved rates"; privacy text |
 | `manifest.json` | strict `extension_pages` CSP, `homepage_url`, fixed Firefox id; `src/storage.js` in the content scripts |
 | `scripts/` | dependency-free ZIP writer, per-browser manifests, checksums, store validator, headless DOM self-test, store asset renderer, loopback-only dev servers |

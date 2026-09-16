@@ -35,11 +35,10 @@ currency, hours per year, overhead multiplier, refresh interval, overrun
 grace, whether to count declined guests and rooms, and the rate list
 (addresses, domains or names with an hourly rate or an annual salary).
 
-These are saved with the browser's `storage.local` API, which keeps them on
+These are saved in the browser's local extension storage, which keeps them on
 this device only. They are **not** placed in Chrome, Edge or Firefox sync, so
-they are never copied to Google's, Microsoft's or Mozilla's servers. Versions
-before 1.0.0 used sync storage; the first run of 1.0.0 moves any such copy to
-local storage and deletes it from sync.
+they are never copied to Google's, Microsoft's or Mozilla's servers, and the
+extension contains no code that could do so.
 
 To delete everything the extension stored, click **Reset and delete saved
 rates** on the options page, or uninstall the extension.

@@ -15,6 +15,7 @@
     "test:dom": "node scripts/browser-test.js",
     "check": "node scripts/check.js",
     "validate": "node scripts/validate-extension.js",
+    "verify:chrome": "node scripts/verify-in-chrome.js",
     "sync-core": "node scripts/sync-core.js",
     "sync-core:check": "node scripts/sync-core.js --check",
     "icons": "node scripts/make-icons.js",

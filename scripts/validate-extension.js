@@ -5,7 +5,7 @@
  * arguments). Exits 1 on any error. No dependencies.
  *
  * What the store's own uploader and reviewers reject, checked here first:
- *   - manifest_version 3, name <= 45 chars, description <= 132 chars,
+ *   - manifest_version 3, name <= 75 chars, description <= 132 chars,
  *     version of 1-4 dotted integers each <= 65535
  *   - every file the manifest names exists; icons are PNGs of the stated size
  *   - no remote code: no eval / new Function / remote <script>, and, as this
@@ -77,7 +77,7 @@ function referencedFiles(m) {
 function checkManifest(scope, m, exists, read) {
   if (m.manifest_version !== 3) fail(scope, 'manifest_version must be 3');
   if (typeof m.name !== 'string' || !m.name.trim()) fail(scope, 'name is required');
-  else if (m.name.length > 45) fail(scope, 'name is ' + m.name.length + ' chars; the store allows 45');
+  else if (m.name.length > 75) fail(scope, 'name is ' + m.name.length + ' chars; the manifest allows 75');
   if (typeof m.description !== 'string' || !m.description.trim()) fail(scope, 'description is required');
   else if (m.description.length > 132) fail(scope, 'description is ' + m.description.length + ' chars; the store allows 132');
   else ok(scope, 'description ' + m.description.length + '/132 chars');

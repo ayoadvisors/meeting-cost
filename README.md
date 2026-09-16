@@ -153,9 +153,14 @@ npm run build            # everything above except the assets
 ## Publishing
 
 [store/PUBLISHING.md](store/PUBLISHING.md) walks through the developer
-dashboard; [store/listing.md](store/listing.md) has every field's text and
-the privacy-practices answers. Pushing a `vX.Y.Z` tag makes CI attach the
-packages to a GitHub release.
+dashboard; [CHROMEWEBSTORE.md](CHROMEWEBSTORE.md) is the single source of
+truth for every listing field, the permission justifications and the
+privacy-practices answers, in the layout Google's
+[extension guidance for coding agents](https://developer.chrome.com/docs/extensions/ai/build-with-ai)
+asks for. `npm run verify:chrome` installs the extension into a real Chrome
+through the Chrome DevTools MCP server and checks every surface before an
+upload. Pushing a `vX.Y.Z` tag makes CI attach the packages to a GitHub
+release.
 
 ## Other providers
 

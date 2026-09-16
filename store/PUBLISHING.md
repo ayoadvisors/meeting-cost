@@ -1,7 +1,9 @@
 # Publishing Meeting Cost to the Chrome Web Store
 
 The whole path from this repository to a public listing. The text for every
-form field is in [listing.md](listing.md); the images are in `assets/`.
+form field, the permission justifications and the privacy answers are in
+[CHROMEWEBSTORE.md](../CHROMEWEBSTORE.md) at the repository root; the images
+are in `assets/`.
 
 ## 0. One-time setup
 
@@ -37,6 +39,22 @@ dist/SHA256SUMS.txt
 The validator must end with `no errors`. Re-run `npm run validate` alone at
 any time.
 
+Then check the package in a real Chrome, the way Google's extension guidance
+for coding agents recommends (through the Chrome DevTools MCP server's
+extension tools):
+
+```bash
+npm run verify:chrome
+```
+
+It installs the unpacked extension, confirms Chrome accepted the manifest and
+its content security policy, opens the options page and round-trips a
+setting through local storage, clicks the toolbar action so the service
+worker opens the options page, reads `chrome://extensions` for an error
+badge, then uninstalls. Add `-- --headed` to watch it. The same server is
+configured for Claude Code in `.mcp.json` (Chrome 149+ can add
+`--autoConnect` to drive your own running Chrome instead of a fresh one).
+
 If the listing images need refreshing (after a UI change):
 
 ```bash
@@ -48,7 +66,7 @@ npm run store:assets
 1. Dashboard → **New item** → upload `dist/meeting-cost-chrome-1.0.0.zip`.
 2. **Store listing** tab: paste the name, summary, description, category,
    language, upload the four screenshots and the two promo tiles, set the
-   homepage and support URLs (all in `listing.md`).
+   homepage and support URLs (all in `CHROMEWEBSTORE.md`).
 3. **Privacy practices** tab: paste the single-purpose statement and the
    per-permission justifications, answer "No" to remote code, leave every
    data-collection box unticked, tick the three certifications, set the

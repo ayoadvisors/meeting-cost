@@ -117,7 +117,7 @@ and the total ticked once the meeting started.
 |---|---|
 | `manifest.json` | MV3 manifest; content scripts on Google Calendar and Outlook web hosts |
 | `src/vendor/meeting-cost-core.js` | shared engine (copied from `packages/core`) |
-| `src/storage.js` | the rate table in `chrome.storage.local` (never sync), with a one-time migration off sync |
+| `src/storage.js` | the rate table in `chrome.storage.local` (never sync) |
 | `src/content/extract.js` | time-range parsing and DOM heuristics |
 | `src/content/widget.js` | the injected row and guest annotations |
 | `src/content/main.js` | provider detection, config loading, mount lifecycle |
@@ -131,8 +131,7 @@ and the total ticked once the meeting started.
 ## Settings
 
 All in the options page and stored in `chrome.storage.local`, on this device only
-(a copy left in sync storage by an earlier build is moved to local storage
-once and deleted from sync; "Reset and delete saved rates" removes both):
+("Reset and delete saved rates" removes them):
 
 | Setting | Default | Notes |
 |---|---|---|

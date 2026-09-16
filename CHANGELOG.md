@@ -7,8 +7,8 @@ packages, built and checked by `npm run build`.
 
 ### Security and privacy (see `docs/security-review.md`)
 
-- Rates now live in `storage.local` only; a copy left in sync storage by
-  earlier builds is migrated once and removed. "Reset" deletes everything.
+- Rates live in `storage.local` only; the shipped code never touches sync
+  storage. "Reset" deletes everything.
 - E-mail regex bounded to RFC lengths: an 80 KB hostile description went
   from 3.9 s to 13 ms; text nodes over 10 000 characters are not scanned.
 - Guest names such as `constructor` or `__proto__` no longer crash the
@@ -43,4 +43,9 @@ packages, built and checked by `npm run build`.
 ### Documentation
 
 - `PRIVACY.md`, `SECURITY.md`, `docs/security-review.md`,
-  `store/listing.md`, `store/PUBLISHING.md`.
+  `CHROMEWEBSTORE.md` (the store listing file Google's extension guidance
+  for coding agents asks for), `store/PUBLISHING.md`.
+- `npm run verify:chrome`: installs the extension into a real Chrome through
+  the Chrome DevTools MCP server and checks manifest, CSP, options page,
+  storage, service worker and the extensions page; `.mcp.json` configures
+  the same server for Claude Code.
