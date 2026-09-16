@@ -38,11 +38,20 @@ const serverArgs = ['-y', 'chrome-devtools-mcp@latest', '--categoryExtensions', 
 if (!headed) serverArgs.push('--headless');
 if (process.env.CHROME_PATH) serverArgs.push('--executablePath=' + process.env.CHROME_PATH);
 
-// On Windows npx is a .cmd shim, which Node refuses to spawn directly; go
-// through cmd.exe with a single command string (no spaces in the args).
-const child = process.platform === 'win32'
-  ? spawn(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', 'npx ' + serverArgs.join(' ')], { stdio: ['pipe', 'pipe', 'pipe'], windowsVerbatimArguments: true })
-  : spawn('npx', serverArgs, { stdio: ['pipe', 'pipe', 'pipe'] });
+// Run npm's own npx entry point with this Node binary: no shell, no .cmd
+// shim (which Node refuses to spawn directly on Windows), and every argument
+// stays a separate argv entry.
+function npxLauncher() {
+  const nodeDir = path.dirname(process.execPath);
+  const candidates = [
+    path.join(nodeDir, 'node_modules', 'npm', 'bin', 'npx-cli.js'),                  // Windows layout
+    path.join(nodeDir, '..', 'lib', 'node_modules', 'npm', 'bin', 'npx-cli.js')      // POSIX layout
+  ];
+  const cli = candidates.find((c) => fs.existsSync(c));
+  return cli ? { command: process.execPath, prefix: [cli] } : { command: 'npx', prefix: [] };
+}
+const launcher = npxLauncher();
+const child = spawn(launcher.command, launcher.prefix.concat(serverArgs), { stdio: ['pipe', 'pipe', 'pipe'] });
 
 // The server only touches paths inside the roots the client declares, so it
 // asks for them (roots/list); the repository is the one root it needs.
