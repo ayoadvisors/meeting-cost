@@ -22,7 +22,7 @@ let html = fs.readFileSync(path.join(DEMO, 'index.html'), 'utf8');
 html = html.replace(/<link rel="stylesheet" href="([^"]+)">/g, (m, href) => /^https?:/.test(href) ? m :
   '<style>\n' + fs.readFileSync(path.resolve(DEMO, href), 'utf8') + '\n</style>');
 
-html = html.replace(/<script src="([^"]+)"><\/script>/g, (m, src) =>
+html = html.replace(/<script src="([^"]+)">\s*<\/script\s*>/g, (m, src) =>
   '<script>\n' + fs.readFileSync(path.resolve(DEMO, src), 'utf8').replace(/<\/script/gi, '<\\/script') + '\n</script>');
 
 fs.mkdirSync(DIST, { recursive: true });

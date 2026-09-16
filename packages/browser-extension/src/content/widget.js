@@ -37,14 +37,6 @@
     return svg;
   }
 
-  function statusText(person) {
-    var bits = [];
-    if (person.organizer) bits.push('Organizer');
-    if (person.optional) bits.push('Optional');
-    if (person.status === 'declined') bits.push('Declined');
-    return bits.join(' · ');
-  }
-
   /**
    * @param {Object} spec
    * @param {Element} spec.container   element holding the open event

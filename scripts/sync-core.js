@@ -24,7 +24,8 @@ let stale = 0;
 
 for (const target of COPIES) {
   const rel = path.relative(ROOT, target);
-  const current = fs.existsSync(target) ? fs.readFileSync(target, 'utf8') : null;
+  let current = null;
+  try { current = fs.readFileSync(target, 'utf8'); } catch (err) { /* no copy yet */ }
   if (current === source) { console.log('up to date', rel); continue; }
   if (check) { console.error('STALE', rel); stale++; continue; }
   fs.mkdirSync(path.dirname(target), { recursive: true });

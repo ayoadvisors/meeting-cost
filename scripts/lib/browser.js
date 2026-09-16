@@ -32,8 +32,9 @@ function findBrowser() {
   }
   for (const c of candidates) {
     if (/[\\/]/.test(c)) { if (fs.existsSync(c)) return c; continue; }
+    // A bare command name: ask it for its version (no shell involved).
     try {
-      execFileSync('sh', ['-c', 'command -v ' + c], { stdio: 'pipe' });
+      execFileSync(c, ['--version'], { stdio: 'pipe', timeout: 10000 });
       return c;
     } catch (err) { /* not installed */ }
   }

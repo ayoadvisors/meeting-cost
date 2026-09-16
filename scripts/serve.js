@@ -36,12 +36,15 @@ function handler(req, res) {
   try { urlPath = decodeURIComponent((req.url || '/').split('?')[0]); }
   catch (err) { return send(res, 400, 'text/plain', 'bad request'); }
   if (urlPath.split('/').some((seg) => seg.startsWith('.'))) return send(res, 404, 'text/plain', 'not found');
+  // "/" joins to "<root>/" so every path inside the root starts with root + separator.
   let file = path.normalize(path.join(root, urlPath));
-  if (file !== root && !file.startsWith(root + path.sep)) return send(res, 403, 'text/plain', 'forbidden');
-  if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
-  fs.readFile(file, (err, data) => {
-    if (err) return send(res, 404, 'text/plain', 'not found: ' + urlPath);
-    send(res, 200, TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream', data);
+  if (!file.startsWith(root + path.sep)) return send(res, 403, 'text/plain', 'forbidden');
+  fs.stat(file, (statErr, stat) => {
+    if (!statErr && stat.isDirectory()) file = path.join(file, 'index.html');
+    fs.readFile(file, (err, data) => {
+      if (err) return send(res, 404, 'text/plain', 'not found: ' + urlPath);
+      send(res, 200, TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream', data);
+    });
   });
 }
 
