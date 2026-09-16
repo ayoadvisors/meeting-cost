@@ -39,12 +39,17 @@ function handler(req, res) {
   // "/" joins to "<root>/" so every path inside the root starts with root + separator.
   let file = path.normalize(path.join(root, urlPath));
   if (!file.startsWith(root + path.sep)) return send(res, 403, 'text/plain', 'forbidden');
-  fs.stat(file, (statErr, stat) => {
-    if (!statErr && stat.isDirectory()) file = path.join(file, 'index.html');
-    fs.readFile(file, (err, data) => {
-      if (err) return send(res, 404, 'text/plain', 'not found: ' + urlPath);
-      send(res, 200, TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream', data);
-    });
+  // Read first, ask questions later: a directory answers with its index.html.
+  fs.readFile(file, (err, data) => {
+    if (err && (err.code === 'EISDIR' || err.code === 'EPERM')) {
+      file = path.join(file, 'index.html');
+      return fs.readFile(file, (err2, data2) => {
+        if (err2) return send(res, 404, 'text/plain', 'not found: ' + urlPath);
+        send(res, 200, TYPES['.html'], data2);
+      });
+    }
+    if (err) return send(res, 404, 'text/plain', 'not found: ' + urlPath);
+    send(res, 200, TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream', data);
   });
 }
 
