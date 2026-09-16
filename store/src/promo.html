@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Meeting Cost promo tile</title>
+<style>
+  :root { color-scheme: light; }
+  html, body { margin: 0; overflow: hidden; }
+  body { font-family: "Google Sans", Roboto, "Segoe UI", system-ui, Arial, sans-serif; color: #fff; background: #202124; }
+  .tile { position: relative; box-sizing: border-box; display: flex; align-items: center; overflow: hidden;
+    background: radial-gradient(120% 140% at 0% 0%, #2a3a2f 0%, #202124 55%, #1b1e21 100%); }
+  .disc { flex: none; border-radius: 50%; background: #188038; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+  .disc svg { fill: #fff; }
+  .text { min-width: 0; }
+  .name { font-weight: 600; letter-spacing: -0.5px; margin: 0; }
+  .tag { margin: 0; color: #f28b82; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .sub { margin: 0; color: #bdc1c6; }
+
+  .small { width: 440px; height: 280px; padding: 0 36px; gap: 26px; }
+  .small .disc { width: 96px; height: 96px; }
+  .small .disc svg { width: 58px; height: 58px; }
+  .small .name { font-size: 30px; line-height: 36px; }
+  .small .tag { font-size: 25px; line-height: 32px; margin-top: 6px; white-space: nowrap; }
+  .small .sub { font-size: 14px; line-height: 20px; margin-top: 10px; }
+
+  .marquee { width: 1400px; height: 560px; padding: 0 120px; gap: 72px; }
+  .marquee .disc { width: 220px; height: 220px; }
+  .marquee .disc svg { width: 132px; height: 132px; }
+  .marquee .name { font-size: 72px; line-height: 80px; }
+  .marquee .tag { font-size: 64px; line-height: 76px; margin-top: 12px; }
+  .marquee .sub { font-size: 28px; line-height: 40px; margin-top: 22px; }
+</style>
+</head>
+<body>
+<div class="tile" id="tile">
+  <div class="disc"><svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg></div>
+  <div class="text">
+    <p class="name">Meeting Cost</p>
+    <p class="tag">$603.25 and rising</p>
+    <p class="sub">The price of every meeting, live, in Google Calendar and Outlook.</p>
+  </div>
+</div>
+<script>
+  document.getElementById('tile').className = 'tile ' + ((location.search.match(/size=(\w+)/) || [])[1] === 'marquee' ? 'marquee' : 'small');
+</script>
+</body>
+</html>

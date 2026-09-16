@@ -4,16 +4,25 @@
   "private": true,
   "description": "Calendar plugins (browser extension, Google Workspace add-on, Outlook add-in) that show the combined hourly cost of everyone in a meeting, live.",
   "license": "MIT",
+  "homepage": "https://github.com/ayoadvisors/meeting-cost",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ayoadvisors/meeting-cost.git"
+  },
   "engines": { "node": ">=20" },
   "scripts": {
     "test": "node --test packages/core/test/core.test.js packages/browser-extension/test/extract.test.js",
+    "test:dom": "node scripts/browser-test.js",
     "check": "node scripts/check.js",
+    "validate": "node scripts/validate-extension.js",
     "sync-core": "node scripts/sync-core.js",
     "sync-core:check": "node scripts/sync-core.js --check",
     "icons": "node scripts/make-icons.js",
     "demo": "node scripts/serve.js . 8765",
     "build:demo": "node scripts/build-demo.js",
+    "package": "node scripts/package-extension.js",
     "package:extension": "node scripts/package-extension.js",
-    "build": "npm run sync-core && npm run icons && npm run check && npm test"
+    "store:assets": "node scripts/make-store-assets.js",
+    "build": "npm run sync-core && npm run icons && npm run check && npm test && npm run test:dom && npm run package && npm run validate"
   }
 }

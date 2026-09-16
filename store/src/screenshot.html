@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Meeting Cost store screenshot</title>
+<style>
+  :root { color-scheme: light; }
+  html, body { margin: 0; width: 1280px; height: 800px; overflow: hidden; }
+  body {
+    background: linear-gradient(135deg, #e8f0fe 0%, #f1f3f4 55%, #e6f4ea 100%);
+    color: #202124; font-family: "Google Sans", Roboto, "Segoe UI", system-ui, Arial, sans-serif; font-size: 14px; line-height: 20px;
+  }
+  .stage { position: relative; width: 1280px; height: 800px; display: flex; align-items: center; }
+  .caption { width: 430px; padding: 0 0 0 72px; box-sizing: border-box; flex: none; }
+  .caption .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; font-weight: 600; font-size: 18px; color: #188038; }
+  .caption .brand .disc { width: 36px; height: 36px; border-radius: 50%; background: #188038; color: #fff; display: inline-flex; align-items: center; justify-content: center; }
+  .caption .brand svg { width: 22px; height: 22px; fill: currentColor; }
+  .caption h1 { font-size: 40px; line-height: 48px; font-weight: 600; margin: 0 0 18px; letter-spacing: -0.5px; }
+  .caption p { font-size: 18px; line-height: 28px; color: #5f6368; margin: 0; }
+  .shot { flex: 1 1 auto; display: flex; justify-content: center; align-items: center; }
+  .shot > * { zoom: 1.32; }
+
+  /* ---- Google Calendar bubble replica (same markup as demo/index.html) ---- */
+  .bubble { width: 448px; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(60,64,67,.3), 0 4px 8px 3px rgba(60,64,67,.15); padding: 8px 0 12px; box-sizing: border-box; }
+  .toolbar { display: flex; justify-content: flex-end; gap: 4px; padding: 0 8px 4px; }
+  .toolbar button { width: 40px; height: 40px; border: 0; background: transparent; border-radius: 50%; color: #5f6368; }
+  .toolbar svg { width: 20px; height: 20px; fill: currentColor; }
+  .row { display: flex; gap: 16px; padding: 6px 16px; }
+  .row > .ic { flex: none; width: 20px; height: 20px; color: #5f6368; margin-top: 2px; }
+  .row > .ic svg { width: 20px; height: 20px; fill: currentColor; }
+  .row > .txt { flex: 1 1 auto; min-width: 0; }
+  .title-row { padding-top: 0; }
+  .color-chip { flex: none; width: 14px; height: 14px; border-radius: 4px; background: #039be5; margin: 8px 3px 0; }
+  .title { font-size: 22px; line-height: 28px; color: #3c4043; }
+  .when { color: #3c4043; margin-top: 4px; }
+  .muted { color: #5f6368; font-size: 12px; line-height: 16px; }
+  .meet { display: inline-flex; align-items: center; gap: 8px; background: #1a73e8; color: #fff; text-decoration: none; border-radius: 4px; padding: 0 16px 0 12px; height: 36px; font-weight: 500; }
+  .meet .logo { width: 20px; height: 20px; border-radius: 3px; background: linear-gradient(135deg, #00832d 25%, #0066da 25% 50%, #e94235 50% 75%, #ffba00 75%); }
+  .guests-row { padding-top: 10px; }
+  [role="list"] { margin-top: 6px; }
+  [role="listitem"] { display: flex; align-items: center; gap: 12px; padding: 4px 0; }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; flex: none; }
+  .name { color: #3c4043; }
+  .status { margin-left: auto; width: 16px; height: 16px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; }
+  .status.yes { background: #188038; }
+  .status.wait { background: #fff; border: 1px solid #dadce0; color: #5f6368; }
+
+  /* ---- Outlook on the web peek replica (same markup as demo/outlook.html) ---- */
+  .peek { background: #fff; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.18); width: 420px; padding: 16px 20px; box-sizing: border-box; font-family: "Segoe UI", system-ui, sans-serif; color: #242424; }
+  .peek .subject { font-size: 18px; font-weight: 600; margin: 0 0 6px; }
+  .peek .time { color: #424242; margin-bottom: 10px; }
+  .peek .link { color: #0f6cbd; display: block; margin-bottom: 12px; text-decoration: none; }
+  .peek .people { display: flex; flex-direction: column; gap: 6px; }
+  .peek .person { display: flex; align-items: center; gap: 8px; }
+  .peek .pav { width: 24px; height: 24px; border-radius: 50%; background: #c7e0f4; color: #0f4c81; font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
+  .peek [role="button"] { color: #242424; }
+  .peek .rsvp { color: #616161; }
+
+  /* ---- options page, framed ---- */
+  .frame { width: 760px; height: 640px; background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(60,64,67,.3), 0 8px 24px rgba(60,64,67,.2); overflow: hidden; }
+  .frame iframe { width: 760px; height: 640px; border: 0; }
+  .shot .frame { zoom: 1; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="caption">
+    <div class="brand"><span class="disc"><svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg></span>Meeting Cost</div>
+    <h1 id="h"></h1>
+    <p id="p"></p>
+  </div>
+  <div class="shot" id="shot"></div>
+</div>
+
+<template id="tpl-google">
+  <div class="bubble" role="dialog" aria-label="Marketing Sync">
+    <div class="toolbar">
+      <button type="button" aria-label="Edit"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
+      <button type="button" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+      <button type="button" aria-label="Options"><svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></button>
+      <button type="button" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+    </div>
+    <div class="content">
+      <div class="row title-row">
+        <span class="color-chip"></span>
+        <div class="txt">
+          <div class="title" role="heading" aria-level="2">Marketing Sync</div>
+          <div class="when" id="when"></div>
+          <div>Weekly on Tuesday, Thursday</div>
+        </div>
+      </div>
+      <div class="row">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg></span>
+        <div class="txt">
+          <a class="meet" href="#"><span class="logo"></span>Join Google Meet</a>
+          <div class="muted" style="margin-top:6px">meet.google.com/kqv-cvap-hdu</div>
+        </div>
+      </div>
+      <div class="row guests-row">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></span>
+        <div class="txt">
+          <div>5 guests</div>
+          <div class="muted">4 yes, 1 awaiting</div>
+          <div role="list">
+            <div role="listitem" data-hovercard-id="john.smith@acme.com"><span class="avatar" style="background:#7b1fa2">JS</span><div><div class="name">John Smith</div><div class="muted">Organizer</div></div><span class="status yes" role="img" aria-label="Accepted">&#10003;</span></div>
+            <div role="listitem" data-hovercard-id="olivia.jones@acme.com"><span class="avatar" style="background:#00897b">OJ</span><div><div class="name">Olivia Jones</div></div><span class="status yes" role="img" aria-label="Accepted">&#10003;</span></div>
+            <div role="listitem" data-hovercard-id="justin.mendel@acme.com"><span class="avatar" style="background:#3949ab">JM</span><div><div class="name">Justin Mendel</div></div><span class="status wait" role="img" aria-label="Awaiting">?</span></div>
+            <div role="listitem" data-hovercard-id="vera.katts@acme.com"><span class="avatar" style="background:#e65100">VK</span><div><div class="name">Vera Katts</div></div><span class="status yes" role="img" aria-label="Accepted">&#10003;</span></div>
+            <div role="listitem" data-hovercard-id="alex.jones@acme.com"><span class="avatar" style="background:#c62828">AJ</span><div><div class="name">Alex Jones</div></div><span class="status yes" role="img" aria-label="Accepted">&#10003;</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-outlook">
+  <div class="peek" role="dialog">
+    <div class="subject">Curriculum Committee sync</div>
+    <div class="time"><span aria-label="Time" id="when"></span></div>
+    <a class="link" href="#">Join Teams meeting</a>
+    <div class="people">
+      <div class="person"><span class="pav" role="button" aria-label="Opens card for John Smith">JS</span><span><span role="button" aria-label="Opens card for John Smith">John Smith</span>, <span class="rsvp">Organizer</span></span></div>
+      <div class="person"><span class="pav" role="button" aria-label="Opens card for Benjamin Brown">BB</span><span><span role="button" aria-label="Opens card for Benjamin Brown">Benjamin Brown</span>, <span class="rsvp">You didn't respond</span></span></div>
+      <div class="person"><span class="pav" role="button" aria-label="Opens card for Olivia Jones">OJ</span><span><span role="button" aria-label="Opens card for Olivia Jones">Olivia Jones</span>, <span class="rsvp">Accepted</span></span></div>
+      <div class="person"><span class="pav" role="button" aria-label="Opens card for Vera Katts">VK</span><span><span role="button" aria-label="Opens card for Vera Katts">Vera Katts</span>, <span class="rsvp">Tentative</span></span></div>
+      <div class="person"><span class="pav" role="button" aria-label="Opens card for Sam Lee">SL</span><span><span role="button" aria-label="Opens card for Sam Lee">Sam Lee</span>, <span class="rsvp">Declined</span></span></div>
+    </div>
+  </div>
+</template>
+
+<script>
+  (function () {
+    var scene = (location.search.match(/scene=(\w+)/) || [])[1] || 'upcoming';
+    var COPY = {
+      upcoming: ['See what a meeting costs before you accept it', 'Every guest’s hourly rate, added up for the scheduled length, right inside the Google Calendar event. One click drafts an e-mail instead.'],
+      live: ['Watch the number rise while the meeting runs', 'Once the meeting starts the cost ticks up every minute, and it keeps counting when the meeting runs over.'],
+      outlook: ['Works in Outlook on the web too', 'Rates can be set by name for calendars that hide e-mail addresses. Nothing leaves your browser.'],
+      options: ['Your rates, stored only on your computer', 'Set a default, per-person and per-domain rates, salaries or hourly, a currency and a fully loaded multiplier. Never synced, never sent anywhere.']
+    };
+    document.getElementById('h').textContent = COPY[scene][0];
+    document.getElementById('p').textContent = COPY[scene][1];
+
+    var WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    function clock(d) { var h = d.getHours(), m = d.getMinutes(); return { text: ((h % 12) || 12) + ':' + (m < 10 ? '0' : '') + m, mer: h < 12 ? 'am' : 'pm' }; }
+    function googleWhen(start, end) {
+      var a = clock(start), b = clock(end);
+      var date = WEEKDAYS[start.getDay()] + ', ' + MONTHS[start.getMonth()] + ' ' + start.getDate();
+      var range = a.mer === b.mer ? a.text + ' – ' + b.text + b.mer : a.text + a.mer + ' – ' + b.text + b.mer;
+      return date + ' ⋅ ' + range;
+    }
+    function outlookWhen(start, end) {
+      var a = clock(start), b = clock(end);
+      var wd = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][start.getDay()];
+      return wd + ' ' + (start.getMonth() + 1) + '/' + start.getDate() + '/' + start.getFullYear() + ' ' + a.text + ' ' + a.mer.toUpperCase() + ' - ' + b.text + ' ' + b.mer.toUpperCase();
+    }
+
+    var shot = document.getElementById('shot');
+    var now = new Date();
+    var start, end;
+    if (scene === 'live') {
+      // Started on a clean half hour, at least 20 minutes ago.
+      start = new Date(now.getTime());
+      start.setSeconds(0, 0);
+      start.setMinutes(start.getMinutes() < 30 ? 0 : 30);
+      if (now - start < 20 * 60000) start = new Date(start.getTime() - 30 * 60000);
+      end = new Date(start.getTime() + 60 * 60000);
+    } else {
+      // Tomorrow, 11:00 to 12:00.
+      start = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 11, 0, 0, 0);
+      end = new Date(start.getTime() + 60 * 60000);
+    }
+
+    if (scene === 'options') {
+      var frame = document.createElement('div');
+      frame.className = 'frame';
+      var iframe = document.createElement('iframe');
+      iframe.src = '../../packages/browser-extension/src/options/options.html';
+      iframe.title = 'Meeting Cost options';
+      frame.appendChild(iframe);
+      shot.appendChild(frame);
+      return;
+    }
+
+    window.MC_DEMO_PROVIDER = scene === 'outlook' ? 'outlook' : 'google';
+    window.MC_DEMO_CONFIG = {
+      currency: 'USD', locale: 'en-US', tickSeconds: 60,
+      rates: {
+        'john.smith@acme.com': 144.23, 'olivia.jones@acme.com': 144.23, 'justin.mendel@acme.com': 84.3,
+        'vera.katts@acme.com': 120.19, 'alex.jones@acme.com': 110.3,
+        'John Smith': 144.23, 'Olivia Jones': 144.23, 'Vera Katts': 120.19, 'Sam Lee': 99, 'Benjamin Brown': 110.3
+      }
+    };
+    var tpl = document.getElementById(scene === 'outlook' ? 'tpl-outlook' : 'tpl-google');
+    shot.appendChild(tpl.content.cloneNode(true));
+    document.getElementById('when').textContent = scene === 'outlook' ? outlookWhen(start, end) : googleWhen(start, end);
+
+    // The extension, exactly as shipped, loaded after the fixture exists.
+    var base = '../../packages/browser-extension/src/';
+    var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = base + 'content/widget.css'; document.head.appendChild(css);
+    ['vendor/meeting-cost-core.js', 'content/extract.js', 'content/widget.js', 'content/main.js'].forEach(function (f) {
+      var s = document.createElement('script'); s.src = base + f; s.async = false; document.body.appendChild(s);
+    });
+  })();
+</script>
+</body>
+</html>
