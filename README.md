@@ -20,7 +20,7 @@ actually use:
 Every version shows the same three things: the headline
 (`$603.25 cost of meeting`, becoming `$240.13 and rising` once the meeting
 starts and `and rising · 7 min over` when it runs long), each guest with
-`($144.23 per hour)`, and a **Send an Email Instead** button that opens a
+a `$144.23 per hour` chip, and a **Send an Email Instead** button that opens a
 draft addressed to the guests with the cost spelled out.
 
 ## Status

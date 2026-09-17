@@ -49,15 +49,35 @@
    * @param {string}  spec.provider    'google' | 'outlook' | ...
    * @param {Function} spec.composeUrl draft -> URL for "Send an Email Instead"
    */
+  /**
+   * Is the popup we are drawing into dark? The OS preference is the wrong
+   * signal: Google Calendar and Outlook have their own theme switches, so a
+   * dark-OS user with a light calendar would get near-white text on white.
+   * Walk up to the first ancestor with an opaque background and measure it.
+   */
+  function isDarkBackground(el) {
+    var node = el;
+    var view = (el.ownerDocument && el.ownerDocument.defaultView) || window;
+    while (node && node.nodeType === 1) {
+      var m = /rgba?\((\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)(?:,\s*(\d*(?:\.\d+)?))?\)/.exec(view.getComputedStyle(node).backgroundColor || '');
+      if (m && (m[4] === undefined || parseFloat(m[4]) >= 0.5)) {
+        return (0.2126 * m[1] + 0.7152 * m[2] + 0.0722 * m[3]) / 255 < 0.5;
+      }
+      node = node.parentElement;
+    }
+    return !!(view.matchMedia && view.matchMedia('(prefers-color-scheme: dark)').matches);
+  }
+
   function mount(spec) {
     var config = core.normalizeConfig(spec.config);
     var annotations = [];
+    var dark = isDarkBackground(spec.container);
 
     // Custom tag names on purpose: Google Calendar re-renders the popup with
     // an incremental DOM that patches whatever node sits in a slot, so a plain
     // <div> of ours gets rewritten into a guest row (attributes replaced, our
     // text left behind). It never expects these tags, so it skips them.
-    var row = el('meeting-cost-row', 'mc-row mc-' + spec.provider);
+    var row = el('meeting-cost-row', 'mc-row mc-' + spec.provider + (dark ? ' mc-dark' : ''));
     row.setAttribute('data-mc', 'widget');
     row.setAttribute('role', 'group');
     row.setAttribute('aria-label', 'Meeting cost');
@@ -115,12 +135,12 @@
       spec.attendees.forEach(function (a) {
         var person = byKey[personKey(a)];
         if (!person || !a.rowEl || !a.rowEl.isConnected) return;
-        var text = ' (' + core.formatMoney(person.hourlyRate, config) + ' per hour' +
-          (person.counted ? '' : ', not counted') + ')';
+        var text = core.formatMoney(person.hourlyRate, config) + ' per hour' +
+          (person.counted ? '' : ' · not counted');
         // Each attendee owns exactly one annotation; several people can share
         // a row (Outlook's organizer sentence), so never look it up by row.
         if (a.mcSpan && a.mcSpan.isConnected) { a.mcSpan.textContent = text; return; }
-        var span = el('meeting-cost-annot', 'mc-annot', text);
+        var span = el('meeting-cost-annot', 'mc-annot' + (dark ? ' mc-dark' : ''), text);
         a.mcSpan = span;
         span.setAttribute('data-mc', 'annot');
         span.title = person.rateSource === 'default'

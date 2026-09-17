@@ -22,6 +22,20 @@ packages, built and checked by `npm run build`.
   recipients encoded.
 - Development servers bind to loopback only and never serve dot-files.
 
+### Interface
+
+- The injected row and the options page were restyled: QuickBooks-style
+  money green for the mark, the button and the per-guest rate chips, cool
+  greys for secondary text, warm red only while the meter runs, tabular
+  figures throughout. The options page is laid out like a macOS settings
+  pane: grouped inset cards with hairline separators, switches, a styled
+  select, a code-style rates editor, a preview card, full dark mode.
+- The widget now measures the host popup's real background to pick light or
+  dark colours instead of trusting the OS preference, since both calendars
+  have their own theme switch.
+- Per-guest annotations read "$144.23 per hour" in a chip instead of
+  "($144.23 per hour)" in plain text.
+
 ### Fixes
 
 - Google Calendar: the popup's re-render could take over the widget's `<div>`

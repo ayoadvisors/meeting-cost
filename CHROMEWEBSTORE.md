@@ -182,7 +182,7 @@ https://github.com/ayoadvisors/meeting-cost
 ### Notes for the reviewer (dashboard field)
 
 ```
-Meeting Cost is a content-script extension for Google Calendar and Outlook on the web. To test: install, click the toolbar icon to open the options page, save a default hourly rate (for example 100), then open any event with two or more guests on calendar.google.com or outlook.office.com. A row "$X cost of meeting · Send an Email Instead" appears above the guest list and each guest shows "($100.00 per hour)". The extension makes no network requests (its manifest's content security policy sets connect-src 'none') and stores only the options-page settings in local storage. Source: https://github.com/ayoadvisors/meeting-cost
+Meeting Cost is a content-script extension for Google Calendar and Outlook on the web. To test: install, click the toolbar icon to open the options page, save a default hourly rate (for example 100), then open any event with two or more guests on calendar.google.com or outlook.office.com. A row "$X cost of meeting · Send an Email Instead" appears above the guest list and each guest gets a "$100.00 per hour" chip. The extension makes no network requests (its manifest's content security policy sets connect-src 'none') and stores only the options-page settings in local storage. Source: https://github.com/ayoadvisors/meeting-cost
 ```
 
 ### Known Issues / Limitations

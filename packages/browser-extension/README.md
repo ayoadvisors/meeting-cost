@@ -9,8 +9,8 @@ keeps the number rising while the meeting runs.
 $  $603.25 cost of meeting        [ Send an Email Instead ]
    5 people · $603.25/hr · 1 hr
 
-   John Smith ($144.23 per hour)   Organizer
-   Olivia Jones ($144.23 per hour)
+   John Smith  [ $144.23 per hour ]   Organizer
+   Olivia Jones  [ $144.23 per hour ]
 ```
 
 During the meeting the same row reads `● $240.13 and rising · $10.05 per minute · 23 min in`,
@@ -41,7 +41,7 @@ on class names. `src/content/extract.js` looks for:
 2. the nearest ancestor that also contains **guest e-mail addresses** (from `data-hovercard-id`, `data-email`, `mailto:` links, `title`/`aria-label` attributes, or plain text),
 
 and calls that the event container. The widget is inserted just before the
-guest list; each guest's display name gets a `($144.23 per hour)` suffix.
+guest list; each guest's display name gets a `$144.23 per hour` chip.
 Response status (accepted, declined, awaiting) and organizer/optional flags are
 read from the row's text and icon labels.
 
