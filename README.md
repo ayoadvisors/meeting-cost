@@ -112,6 +112,10 @@ domain-level averages, on your own machine.
 - [SECURITY.md](SECURITY.md): how to report a vulnerability.
 - [docs/security-review.md](docs/security-review.md): the threat model, every
   finding of the September 2026 red-team review, and what was changed.
+- [docs/adr/0001-accounts-subscriptions-team-rates.md](docs/adr/0001-accounts-subscriptions-team-rates.md):
+  the proposed design for accounts, subscriptions, end-to-end encrypted team
+  rate tables and contacts import, and what has to exist before that build
+  starts.
 
 ## Repo layout
 
