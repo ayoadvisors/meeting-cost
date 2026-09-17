@@ -24,6 +24,11 @@ packages, built and checked by `npm run build`.
 
 ### Fixes
 
+- Google Calendar: the popup's re-render could take over the widget's `<div>`
+  as a guest row, leaving the cost subtitle where a guest's name belonged and
+  breaking that row. The widget and its annotations are now custom elements
+  the renderer skips, and a taken-over node is treated as lost rather than
+  kept. Found on a live 8-guest event and verified fixed there.
 - Firefox: the options page loaded and saved nothing because the promise
   API ignores callbacks; it now uses the callback API in every browser.
 - Firefox add-on id is a fixed GUID instead of a placeholder.

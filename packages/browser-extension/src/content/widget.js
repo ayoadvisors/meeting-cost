@@ -53,7 +53,11 @@
     var config = core.normalizeConfig(spec.config);
     var annotations = [];
 
-    var row = el('div', 'mc-row mc-' + spec.provider);
+    // Custom tag names on purpose: Google Calendar re-renders the popup with
+    // an incremental DOM that patches whatever node sits in a slot, so a plain
+    // <div> of ours gets rewritten into a guest row (attributes replaced, our
+    // text left behind). It never expects these tags, so it skips them.
+    var row = el('meeting-cost-row', 'mc-row mc-' + spec.provider);
     row.setAttribute('data-mc', 'widget');
     row.setAttribute('role', 'group');
     row.setAttribute('aria-label', 'Meeting cost');
@@ -116,7 +120,7 @@
         // Each attendee owns exactly one annotation; several people can share
         // a row (Outlook's organizer sentence), so never look it up by row.
         if (a.mcSpan && a.mcSpan.isConnected) { a.mcSpan.textContent = text; return; }
-        var span = el('span', 'mc-annot', text);
+        var span = el('meeting-cost-annot', 'mc-annot', text);
         a.mcSpan = span;
         span.setAttribute('data-mc', 'annot');
         span.title = person.rateSource === 'default'
@@ -163,14 +167,34 @@
       annotate();
     }, config.tickSeconds);
 
+    // Still ours? A node the host re-rendered in place keeps its identity but
+    // loses our attributes and children.
+    function isIntact() {
+      return row.isConnected && row.getAttribute('data-mc') === 'widget' &&
+        headline.parentNode === body && body.parentNode === row;
+    }
+
     return {
       row: row,
       container: spec.container,
+      isIntact: isIntact,
+      // Put back annotations the host dropped while re-rendering guest rows.
+      repair: function () { if (computed) annotate(); },
       destroy: function () {
         ticker.stop();
-        annotations.forEach(function (s) { if (s.parentNode) s.parentNode.removeChild(s); });
+        annotations.forEach(function (s) {
+          if (s.parentNode && s.getAttribute('data-mc') === 'annot') s.parentNode.removeChild(s);
+        });
         annotations = [];
-        if (row.parentNode) row.parentNode.removeChild(row);
+        if (row.getAttribute('data-mc') === 'widget') {
+          if (row.parentNode) row.parentNode.removeChild(row);
+        } else if (row.isConnected) {
+          // The host took the node over; it is theirs now. Clear only what is
+          // still recognisably ours inside it.
+          Array.prototype.forEach.call(row.querySelectorAll('[class^="mc-"], [class*=" mc-"]'), function (n) {
+            if (n.parentNode) n.parentNode.removeChild(n);
+          });
+        }
       },
       getComputed: function () { return computed; }
     };

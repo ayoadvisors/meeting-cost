@@ -214,6 +214,22 @@
 
       check('Object.prototype untouched', ({}).els === undefined && ({}).hourly === undefined && ({}).persona === undefined && Object.keys(Object.prototype).length === 0);
 
+      // Google Calendar's incremental DOM can take our row over in place: the
+      // node stays but its attributes are replaced. The next scan must notice,
+      // leave the host's node alone, and mount a fresh widget (seen live on
+      // calendar.google.com, September 2026).
+      if (f1 && !f1.many) {
+        var hijacked = f1.handle.row;
+        hijacked.removeAttribute('data-mc');
+        hijacked.className = 'host-row';
+        check('a taken-over row is no longer intact', !f1.handle.isIntact());
+        mc.scan();
+        var fresh = mountIn('f1');
+        check('a fresh widget is mounted after the takeover', !!(fresh && !fresh.many && fresh.handle.row !== hijacked && fresh.handle.isIntact()));
+        check('the host-owned node is left in place, minus our leftovers', hijacked.isConnected && !hijacked.querySelector('.mc-sub, .mc-headline, .mc-body'));
+        check('custom tag names keep our nodes out of host slots', !!(fresh && fresh.handle.row.tagName === 'MEETING-COST-ROW' && document.querySelector('#f1 .mc-annot').tagName === 'MEETING-COST-ANNOT'));
+      }
+
       // Tear down and make sure nothing of ours is left behind.
       mc.stop();
       check('stop() removes every injected node', document.querySelectorAll('[data-mc]').length === 0, document.querySelectorAll('[data-mc]').length);

@@ -91,7 +91,7 @@
       for (var i = 0; i < mounts.length; i++) {
         if (mounts[i].container === ev.container) { existing = mounts[i]; break; }
       }
-      if (existing && existing.signature === sig && existing.handle.row.isConnected) {
+      if (existing && existing.signature === sig && existing.handle.isIntact()) {
         keep.push(existing);
         return;
       }
@@ -153,10 +153,13 @@
     }
   });
 
-  // Belt and braces: if a mounted row has vanished, rescan within a second.
+  // Belt and braces: if a mounted row has vanished or been taken over by the
+  // host's re-render, rescan within a second; otherwise put back any guest
+  // annotations the re-render dropped.
   var watchdog = setInterval(function () {
     for (var i = 0; i < mounts.length; i++) {
-      if (!mounts[i].handle.row.isConnected) { schedule(); return; }
+      if (!mounts[i].handle.isIntact()) { schedule(); return; }
+      mounts[i].handle.repair();
     }
   }, 1000);
 

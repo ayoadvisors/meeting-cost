@@ -74,6 +74,15 @@ heuristics now lean on:
 - Google **re-renders the popup a few seconds after it opens** (when an
   add-on card loads), silently removing anything injected. Removal of the
   widget's own node triggers a rescan, and a one-second watchdog re-mounts it.
+- That re-render is an incremental DOM that patches whatever node sits in a
+  slot. A plain `<div>` of ours was rewritten into a guest row in place
+  (attributes replaced, our subtitle text left where "Benjamin Brown"
+  belonged) while `isConnected` stayed true, so a presence check never
+  noticed. The widget and its annotations are therefore custom elements
+  (`<meeting-cost-row>`, `<meeting-cost-annot>`) that the renderer never
+  matches, and the watchdog checks the node's identity (`isIntact()`), not
+  just that it exists; a taken-over node is left to the host and a fresh
+  widget is mounted. Seen and fixed on a live 8-guest event, September 2026.
 - Events with fewer than two people (an event you created for yourself) show
   no widget.
 
