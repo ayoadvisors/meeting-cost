@@ -77,6 +77,14 @@ npm run store:assets
    you want to time the launch. Review of a small content-script extension
    with narrow host permissions usually takes a few hours to a few days.
 
+## 2b. The landing page
+
+`site/` is the landing page, converted from the Claude Design export by
+`node scripts/build-site.js` and published by the Pages workflow on every
+push that touches it. Once the listing is live, set `STORE_URL` in
+`scripts/build-site.js` to the store URL, rebuild, and the "Add to Chrome"
+buttons point at the store instead of the GitHub release.
+
 ## 3. After it is live
 
 - Tag the release so the store package and the source match:

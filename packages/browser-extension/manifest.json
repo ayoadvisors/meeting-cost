@@ -3,7 +3,7 @@
   "name": "Meeting Cost",
   "version": "1.0.0",
   "description": "Shows the combined hourly cost of everyone in a meeting, live and rising, inside Google Calendar and Outlook on the web.",
-  "homepage_url": "https://github.com/ayoadvisors/meeting-cost",
+  "homepage_url": "https://ayoadvisors.github.io/meeting-cost/",
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",

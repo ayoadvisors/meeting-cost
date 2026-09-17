@@ -22,6 +22,19 @@ packages, built and checked by `npm run build`.
   recipients encoded.
 - Development servers bind to loopback only and never serve dot-files.
 
+### Brand and site
+
+- The icon, the two store promo tiles and the landing page come from a
+  brand system designed in Claude Design (`store/design/`). The icon's
+  vector (`icons/icon.svg`) is now the single source every PNG size is
+  rendered from, with transparent backgrounds, so the 16 px toolbar icon is
+  crisp.
+- The landing page is published from `site/` by GitHub Pages at
+  https://ayoadvisors.github.io/meeting-cost/, converted from the Design
+  export into plain static HTML with a small vanilla script for the live
+  hero counter (no runtime, no CDN scripts). The manifest's homepage points
+  there.
+
 ### Interface
 
 - The injected row and the options page were restyled: QuickBooks-style

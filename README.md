@@ -3,6 +3,8 @@
 [![CI](https://github.com/ayoadvisors/meeting-cost/actions/workflows/ci.yml/badge.svg)](https://github.com/ayoadvisors/meeting-cost/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/ayoadvisors/meeting-cost/actions/workflows/codeql.yml/badge.svg)](https://github.com/ayoadvisors/meeting-cost/actions/workflows/codeql.yml)
 
+Landing page: <https://ayoadvisors.github.io/meeting-cost/>
+
 > A calendar plugin that shows the combined hourly salary of everyone in a
 > meeting, in real time. Updates every minute. Let's see how long that
 > "quick sync" lasts when the screen says $603 and rising.

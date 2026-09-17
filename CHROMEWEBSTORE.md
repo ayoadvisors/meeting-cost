@@ -1,6 +1,6 @@
 # Chrome Web Store Listing — Meeting Cost
 
-> Last Updated: 2026-09-16
+> Last Updated: 2026-09-17
 
 The single source of truth for the Chrome Web Store listing, permission
 justifications, privacy disclosures and version history, in the layout
@@ -87,7 +87,7 @@ English
 3. Outlook on the web: the event peek with rates matched by name, a declined guest marked "not counted".
 4. The options page (the real page): defaults, rates by person or domain, the local-only privacy note.
 
-All four are 24-bit PNG with a short caption on the left; none shows a feature the extension does not have. Refresh them if the widget or the options page changes (`npm run store:assets`).
+All four are 24-bit PNG with a short caption on the left; none shows a feature the extension does not have. The two promo tiles and the icon come from the brand system designed in Claude Design (`store/design/unpacked/`); the icon's vector is `packages/browser-extension/icons/icon.svg`, from which every PNG size is rendered (`npm run icons`). Refresh everything if the widget, the options page or the brand changes (`npm run store:assets`).
 
 ## Permissions Justification
 
@@ -167,7 +167,7 @@ https://github.com/ayoadvisors/meeting-cost/issues
 
 **Homepage URL** [RECOMMENDED]
 
-https://github.com/ayoadvisors/meeting-cost
+https://ayoadvisors.github.io/meeting-cost/ (the landing page; source in `site/`, published by GitHub Pages)
 
 ## Version History
 

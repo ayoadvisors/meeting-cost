@@ -13,8 +13,7 @@
   .stage { position: relative; width: 1280px; height: 800px; display: flex; align-items: center; }
   .caption { width: 430px; padding: 0 0 0 72px; box-sizing: border-box; flex: none; }
   .caption .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; font-weight: 600; font-size: 18px; color: #188038; }
-  .caption .brand .disc { width: 36px; height: 36px; border-radius: 50%; background: #188038; color: #fff; display: inline-flex; align-items: center; justify-content: center; }
-  .caption .brand svg { width: 22px; height: 22px; fill: currentColor; }
+  .caption .brand .mark { width: 36px; height: 36px; display: block; border-radius: 9px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
   .caption h1 { font-size: 40px; line-height: 48px; font-weight: 600; margin: 0 0 18px; letter-spacing: -0.5px; }
   .caption p { font-size: 18px; line-height: 28px; color: #5f6368; margin: 0; }
   .shot { flex: 1 1 auto; display: flex; justify-content: center; align-items: center; }
@@ -65,7 +64,7 @@
 <body>
 <div class="stage">
   <div class="caption">
-    <div class="brand"><span class="disc"><svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg></span>Meeting Cost</div>
+    <div class="brand"><img class="mark" src="../../packages/browser-extension/icons/icon.svg" width="36" height="36" alt="">Meeting Cost</div>
     <h1 id="h"></h1>
     <p id="p"></p>
   </div>
