@@ -51,6 +51,17 @@ packages, built and checked by `npm run build`.
 
 ### Fixes
 
+- Code review of the whole extension (8 angles, 11 verified candidates):
+  the watchdog now repairs every open widget each tick instead of stopping
+  at the first broken one; an RSVP that changes while a popup stays open
+  rebuilds the widget; Google Calendar rooms (resource.calendar.google.com)
+  are recognised so "Count rooms" works; a display name made up from an
+  address no longer matches a name-keyed rate meant for someone else; a
+  widget whose button or subtitle the host removed is rebuilt; status
+  words are matched negatives-first ("Not going" is not "going", "No
+  response" is not "no"); Outlook's shared RSVP sentence is segmented by
+  position so avatar-only personas get their own status; one name
+  normalisation shared by the core and the widget.
 - Google Calendar: the popup's re-render could take over the widget's `<div>`
   as a guest row, leaving the cost subtitle where a guest's name belonged and
   breaking that row. The widget and its annotations are now custom elements

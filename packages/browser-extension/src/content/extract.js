@@ -30,6 +30,8 @@
   var EMAIL_SRC = "[A-Z0-9._%+'-]{1,64}@[A-Z0-9-]{1,63}(?:\\.[A-Z0-9-]{1,63})*\\.[A-Z]{2,24}";
   var EMAIL_G = new RegExp(EMAIL_SRC, 'gi');
   var EMAIL_EXACT = new RegExp('^' + EMAIL_SRC + '$', 'i');
+  // Google Calendar rooms and equipment are calendar resources on this domain.
+  var RESOURCE_EMAIL = /@resource\.calendar\.google\.com$/i;
 
   var MONTHS = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
   var MONTH_SRC = '(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\\.?';
@@ -545,6 +547,7 @@
         // "Pat Lee" from it) instead of scraping the sentence around it.
         name: a.name || (a.persona ? '' : (nameFor(a.rowEl === a.el ? a.el : a.rowEl, a.email) || nameFor(a.el, a.email))),
         status: detectStatus(statusText),
+        resource: RESOURCE_EMAIL.test(a.email),
         optional: /\boptional\b/i.test(flagsText),
         organizer: /\borgani[sz]er\b/i.test(flagsText),
         self: /\byou(?:'re|’re| are)?\b/i.test(flagsText),
@@ -569,16 +572,21 @@
       scope = scope.parentElement;
     }
     if (!scope || scope === limitEl) scope = el.parentElement || el;
+    // The segment runs from el to the next persona, both located by document
+    // position rather than by their text: an avatar-only persona button has
+    // no text of its own to run into.
+    var personas = scope.querySelectorAll(PERSONA_SELECTOR);
+    var next = null;
+    for (var i = 0; i < personas.length && !next; i++) {
+      if (personas[i] !== el && !el.contains(personas[i]) &&
+          (el.compareDocumentPosition(personas[i]) & Node.DOCUMENT_POSITION_FOLLOWING)) next = personas[i];
+    }
     var walker = createWalker(scope, NodeFilter.SHOW_TEXT);
     var node;
-    var after = false;
     var parts = [];
     while ((node = walker.nextNode())) {
-      var parent = node.parentElement;
-      if (el.contains(node)) { after = true; continue; }
-      if (!after) continue;
-      var persona = parent && parent.closest && parent.closest(PERSONA_SELECTOR);
-      if (persona && persona !== el && !el.contains(persona)) break;
+      if (el.contains(node) || !(el.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING)) continue;
+      if (next && !(node.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING)) break;
       parts.push(node.data);
     }
     return parts.join(' ');

@@ -158,6 +158,10 @@ All in the options page and stored in `chrome.storage.local`, on this device onl
   is the one file to adjust.
 - Only the guests visible in the popup are counted (Google hides long lists
   behind "N more").
+- Rooms are recognised on Google Calendar by their
+  `resource.calendar.google.com` address. Outlook on the web shows no
+  addresses, so a room there counts like a guest unless you give it a
+  `Room Name = 0/hr` line.
 - Google Calendar's full edit page shows times in inputs rather than text, so
   the widget appears in the popup and the event detail view, not while editing.
   The Google Workspace add-on in this repo covers that case.

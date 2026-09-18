@@ -73,7 +73,11 @@
       ev.title,
       ev.start.getTime(),
       ev.end.getTime(),
-      ev.attendees.map(function (a) { return a.email || a.name; }).sort().join(',')
+      // Status and flags are part of the signature: an RSVP that changes while
+      // the popup stays open must rebuild the widget, not keep the old numbers.
+      ev.attendees.map(function (a) {
+        return (a.email || a.name) + ':' + a.status + (a.optional ? ':opt' : '') + (a.organizer ? ':org' : '');
+      }).sort().join(',')
     ].join('|');
   }
 
@@ -158,7 +162,7 @@
   // annotations the re-render dropped.
   var watchdog = setInterval(function () {
     for (var i = 0; i < mounts.length; i++) {
-      if (!mounts[i].handle.isIntact()) { schedule(); return; }
+      if (!mounts[i].handle.isIntact()) { schedule(); continue; }
       mounts[i].handle.repair();
     }
   }, 1000);

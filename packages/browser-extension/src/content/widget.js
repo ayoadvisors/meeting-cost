@@ -125,7 +125,7 @@
     // People are matched by e-mail when the calendar exposes one, otherwise
     // by display name (Outlook on the web never shows addresses).
     function personKey(p) {
-      return p.email ? String(p.email).toLowerCase() : 'name:' + String(p.name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      return p.email ? String(p.email).toLowerCase() : 'name:' + core.normalizeName(p.name);
     }
 
     function annotate() {
@@ -191,7 +191,8 @@
     // loses our attributes and children.
     function isIntact() {
       return row.isConnected && row.getAttribute('data-mc') === 'widget' &&
-        headline.parentNode === body && body.parentNode === row;
+        iconBox.parentNode === row && body.parentNode === row &&
+        headline.parentNode === body && button.parentNode === body && sub.parentNode === body;
     }
 
     return {

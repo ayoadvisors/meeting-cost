@@ -87,7 +87,15 @@
       <div role="listitem" data-hovercard-id="constructor" class="guest"><div>Not An Address</div></div>
       <div role="listitem" data-hovercard-id="c@x.com" class="guest"><div>Cal Cooper</div></div>
       <div role="listitem" data-hovercard-id="d@x.com" class="guest"><div>Dee Dawson</div><span role="img" aria-label="Declined">&#10007;</span></div>
+      <div role="listitem" data-hovercard-id="room-4@resource.calendar.google.com" class="guest"><div>Boardroom 4</div></div>
     </div>
+  </div>
+
+  <!-- F7: Outlook organizer sentence where every persona is an avatar image with no text of its own -->
+  <div role="dialog" id="f7">
+    <h2>Photo avatars</h2>
+    <div class="when"><span aria-label="Time">Thu 2/2/2099 3:00 PM - 4:00 PM</span></div>
+    <div class="guest"><span class="persona" role="button" aria-label="Opens card for Ann Adams"><img alt="" width="24" height="24"></span>, Accepted, <span class="persona" role="button" aria-label="Opens card for Bob Brown"><img alt="" width="24" height="24"></span>, Declined</div>
   </div>
 
 </div>
@@ -157,7 +165,7 @@
       check('full page scan under 1500 ms', ms < 1500, ms.toFixed(0) + ' ms');
 
       var mounts = mc.getMounts();
-      check('exactly five widgets mounted (F1, F2, F3, F4, F6)', mounts.length === 5, mounts.length);
+      check('exactly six widgets mounted (F1, F2, F3, F4, F6, F7)', mounts.length === 6, mounts.length);
 
       var f1 = mountIn('f1');
       check('F1 Google bubble: widget mounted once', f1 && !f1.many, JSON.stringify(f1 && f1.many));
@@ -208,8 +216,18 @@
       check('F6 non-address chip ignored, declined guest not counted', f6 && !f6.many);
       if (f6 && !f6.many) {
         var c6 = f6.handle.getComputed();
-        check('F6 two people, one counted', c6.people.length === 2 && c6.countedPeople === 1, c6.people.length + ' / ' + c6.countedPeople);
+        check('F6 three entries, one counted', c6.people.length === 3 && c6.countedPeople === 1, c6.people.length + ' / ' + c6.countedPeople);
+        check('F6 the room is a resource and is not counted', c6.people.some(function (p) { return p.email === 'room-4@resource.calendar.google.com' && p.resource && !p.counted; }));
         check('F6 annotation says not counted', /not counted/.test(document.querySelector('#f6').textContent));
+      }
+
+      var f7 = mountIn('f7');
+      check('F7 avatar-only personas in one sentence: widget mounted', !!(f7 && !f7.many));
+      if (f7 && !f7.many) {
+        var c7 = f7.handle.getComputed();
+        var byName = {};
+        c7.people.forEach(function (p) { byName[p.name] = p.status; });
+        check('F7 each persona gets its own status from the shared sentence', byName['Ann Adams'] === 'accepted' && byName['Bob Brown'] === 'declined', JSON.stringify(byName));
       }
 
       check('Object.prototype untouched', ({}).els === undefined && ({}).hourly === undefined && ({}).persona === undefined && Object.keys(Object.prototype).length === 0);
@@ -228,6 +246,25 @@
         check('a fresh widget is mounted after the takeover', !!(fresh && !fresh.many && fresh.handle.row !== hijacked && fresh.handle.isIntact()));
         check('the host-owned node is left in place, minus our leftovers', hijacked.isConnected && !hijacked.querySelector('.mc-sub, .mc-headline, .mc-body'));
         check('custom tag names keep our nodes out of host slots', !!(fresh && fresh.handle.row.tagName === 'MEETING-COST-ROW' && document.querySelector('#f1 .mc-annot').tagName === 'MEETING-COST-ANNOT'));
+
+        // An RSVP that changes while the popup stays open (same guests, new
+        // status) must rebuild the widget with the new numbers.
+        if (fresh && !fresh.many) {
+          document.querySelector('#f1 [data-hovercard-id="justin.mendel@acme.com"] [role="img"]').setAttribute('aria-label', 'Declined');
+          mc.scan();
+          var changed = mountIn('f1');
+          var cc = changed && !changed.many && changed.handle.getComputed();
+          check('a status change alone rebuilds the widget', !!(cc && changed.handle !== fresh.handle && cc.people[2].status === 'declined' && cc.countedPeople === 4), cc ? cc.people[2].status + ' / ' + cc.countedPeople : 'no mount');
+
+          // A host that strips one control out of our own row is a takeover too.
+          if (cc) {
+            changed.handle.row.querySelector('.mc-btn').remove();
+            check('a missing button makes the row not intact', !changed.handle.isIntact());
+            mc.scan();
+            var again = mountIn('f1');
+            check('the widget is rebuilt with its button', !!(again && !again.many && again.handle !== changed.handle && again.handle.isIntact() && again.handle.row.querySelector('.mc-btn')));
+          }
+        }
       }
 
       // Tear down and make sure nothing of ours is left behind.

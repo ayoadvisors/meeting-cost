@@ -198,10 +198,13 @@
   /* Attendees                                                           */
   /* ------------------------------------------------------------------ */
 
+  // Order matters: "not going" contains "going" and "tentatively accepted"
+  // contains "accepted", so the negatives and the hedges are tried first. A
+  // bare "no" is a decline, but "no response" (pending) is not.
   var STATUS_WORDS = [
-    [/\b(accepted|yes|going|attending)\b/i, 'accepted'],
-    [/\b(declined|no|not going|not attending)\b/i, 'declined'],
+    [/\b(declined|no(?!\s+response)|not going|not attending)\b/i, 'declined'],
     [/\b(tentative|maybe|tentatively)\b/i, 'tentative'],
+    [/\b(accepted|yes|going|attending)\b/i, 'accepted'],
     [/\b(awaiting|pending|needs ?action|not responded|no response|invited|none)\b/i, 'pending']
   ];
 
@@ -247,9 +250,13 @@
       var key = email || name.toLowerCase();
       if (!key || seen[key]) return;
       seen[key] = true;
+      var shown = !!name && name.toLowerCase() !== email;
       out.push({
         email: email,
-        name: name && name.toLowerCase() !== email ? name : prettyNameFromEmail(email),
+        name: shown ? name : prettyNameFromEmail(email),
+        // A name made up from the address was never on the calendar and may
+        // belong to someone else: it must not match a name-keyed rate.
+        nameFromEmail: !shown,
         status: normalizeStatus(a.status !== undefined ? a.status : a.responseStatus),
         optional: !!a.optional,
         organizer: !!a.organizer,
@@ -294,7 +301,7 @@
     var end = toDate(input.end);
 
     var people = normalizeAttendees(input.attendees).map(function (a) {
-      var rate = resolveRate(a.email, cfg, a.name);
+      var rate = resolveRate(a.email, cfg, a.nameFromEmail ? '' : a.name);
       var counted = isCounted(a, cfg);
       return {
         email: a.email,
@@ -601,6 +608,7 @@
     VERSION: VERSION,
     DEFAULT_CONFIG: DEFAULT_CONFIG,
     normalizeConfig: normalizeConfig,
+    normalizeName: normalizeName,
     resolveRate: resolveRate,
     normalizeStatus: normalizeStatus,
     normalizeAttendees: normalizeAttendees,

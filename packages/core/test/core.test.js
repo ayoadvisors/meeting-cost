@@ -355,3 +355,25 @@ test('buildEmailDraft keeps a hostile title to one short line; mailto encodes od
   const odd = core.composeUrl.mailto({ to: ["o'brien%41@x.com", 'a&b=c@x.com'], subject: 's', body: 'b' });
   assert.ok(odd.startsWith("mailto:o'brien%2541@x.com,a%26b%3Dc@x.com?subject=s&body=b"), odd);
 });
+
+test('a bare "no" declines but "no response" is pending', () => {
+  assert.equal(core.normalizeStatus('No response'), 'pending');
+  assert.equal(core.normalizeStatus('no'), 'declined');
+  assert.equal(core.normalizeStatus('Not going'), 'declined');
+});
+
+test('a name made up from the address never matches a name-keyed rate', () => {
+  const cfg = core.normalizeConfig({ defaultHourlyRate: 80, rates: { 'John Smith': 300 } });
+  const r = core.computeMeeting({
+    attendees: [
+      { email: 'john.smith@othercorp.com' },
+      { email: 'js@acme.com', name: 'John Smith' },
+      { name: 'John Smith' }
+    ],
+    start: START, end: END, config: cfg, now: at(-1)
+  });
+  assert.equal(r.people[0].name, 'John Smith', 'the display name is still derived from the address');
+  assert.equal(r.people[0].rateSource, 'default', 'but it does not pick up the name-keyed rate');
+  assert.equal(r.people[1].rateSource, 'name', 'a name the calendar showed does');
+  assert.equal(r.people[2].rateSource, 'name');
+});
