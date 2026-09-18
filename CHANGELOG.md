@@ -70,6 +70,9 @@ packages, built and checked by `npm run build`.
 - Firefox: the options page loaded and saved nothing because the promise
   API ignores callbacks; it now uses the callback API in every browser.
 - Firefox add-on id is a fixed GUID instead of a placeholder.
+- Firefox manifest declares `data_collection_permissions: none`, which
+  Firefox Add-ons requires of every new extension. The Chrome/Edge package
+  is unchanged.
 - Store packages are written by a built-in ZIP encoder with forward-slash
   paths (the previous archives had backslashes, which store unpackers
   reject), one manifest per browser, and reproducible timestamps.

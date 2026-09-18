@@ -109,13 +109,57 @@ buttons point at the store instead of the GitHub release.
 
 ## 5. The other stores (same package)
 
-- **Microsoft Edge Add-ons** (<https://partner.microsoft.com/dashboard/microsoftedge>):
-  free registration; upload the same Chrome zip; the listing fields mirror
-  Chrome's.
-- **Firefox Add-ons** (<https://addons.mozilla.org/developers/>): upload
-  `dist/meeting-cost-firefox-1.0.0.zip`. The add-on id is fixed in the
-  manifest (`browser_specific_settings.gecko.id`). AMO accepts the sources
-  as-is (nothing is minified or generated).
+All the text comes from `CHROMEWEBSTORE.md`; only the field names differ.
+
+### Microsoft Edge Add-ons
+
+<https://partner.microsoft.com/dashboard/microsoftedge>. Registration is
+free and needs a Microsoft account.
+
+1. **Create new extension** → upload `dist/meeting-cost-chrome-1.0.0.zip`
+   (the same file as Chrome).
+2. **Availability**: Public, all markets.
+3. **Properties**: category Productivity; privacy policy requirements: the
+   extension does not access, collect or transmit personal information, but
+   give the privacy policy URL anyway; website URL = the homepage URL;
+   support contact = the support URL; mature content: no.
+4. **Store listing** (English): the name and short description are read
+   from the manifest. Description = the detailed description. Extension
+   store logo = `store/assets/icon-300.png` (300×300). Small promotional
+   tile = `promo-small-440x280.png`, large = `promo-marquee-1400x560.png`.
+   Screenshots = the four 1280×800 PNGs. Search terms (at most seven, 21
+   words in all): `meeting cost`, `meeting cost calculator`,
+   `google calendar`, `outlook calendar`, `hourly rate`, `meeting timer`,
+   `productivity`.
+5. **Notes for certification**: the reviewer notes from `CHROMEWEBSTORE.md`.
+6. **Publish**. Certification usually takes up to seven business days.
+
+### Firefox Add-ons (AMO)
+
+<https://addons.mozilla.org/developers/>. Free; needs a Mozilla account.
+
+1. Check the package with Mozilla's own linter (expect 0 errors; the two
+   `strict_min_version` warnings only say that Firefox older than 140
+   ignores `data_collection_permissions`):
+
+   ```bash
+   npx addons-linter dist/meeting-cost-firefox-1.0.0.zip
+   ```
+
+2. **Submit a New Add-on** → *On this site* → upload
+   `dist/meeting-cost-firefox-1.0.0.zip`. The add-on id is fixed in the
+   manifest (`browser_specific_settings.gecko.id`), and the manifest
+   declares `data_collection_permissions: { required: ["none"] }`, which
+   AMO requires of every new extension. Compatibility: Firefox desktop
+   only (the calendar pages' mobile layouts are not supported).
+3. "Do you need to submit source code?" **No**: nothing is minified,
+   bundled or generated; the zip is the source.
+4. Listing: name and summary from the manifest; description = the detailed
+   description; category "Other" (AMO has no Productivity category);
+   support site = the support URL;
+   homepage; licence MIT; privacy policy = paste the text of `PRIVACY.md`
+   (AMO hosts the text, not a link); screenshots = the four PNGs.
+5. **Notes to reviewer**: the reviewer notes from `CHROMEWEBSTORE.md`.
 
 ## 6. What reviewers look for, and where this package stands
 

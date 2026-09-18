@@ -77,6 +77,7 @@ English
 | Screenshot 5 | 1280×800 or 640×400 | ⬜ Not created | |
 | Small Promo Tile [RECOMMENDED] | 440×280 | ✅ Ready | `store/assets/promo-small-440x280.png` |
 | Marquee Promo Tile | 1400×560 | ✅ Ready | `store/assets/promo-marquee-1400x560.png` |
+| Edge Add-ons store logo (not used by Chrome) | 300×300 | ✅ Ready | `store/assets/icon-300.png` |
 
 <!-- Status options: ⬜ Not created | 🟡 Needs update | ✅ Ready. Regenerate with `npm run store:assets`. -->
 

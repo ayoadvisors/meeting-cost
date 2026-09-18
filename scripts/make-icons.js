@@ -22,7 +22,9 @@ const SVG = path.join(ROOT, 'packages', 'browser-extension', 'icons', 'icon.svg'
 const TARGETS = [
   { dir: path.join(ROOT, 'packages', 'browser-extension', 'icons'), sizes: [16, 32, 48, 128] },
   { dir: path.join(ROOT, 'packages', 'outlook-addin', 'assets'), sizes: [16, 32, 64, 80, 128] },
-  { dir: path.join(ROOT, 'packages', 'google-workspace-addon'), sizes: [128] }
+  { dir: path.join(ROOT, 'packages', 'google-workspace-addon'), sizes: [128] },
+  // Microsoft Edge Add-ons asks for a 300x300 store logo.
+  { dir: path.join(ROOT, 'store', 'assets'), sizes: [300] }
 ];
 
 const browser = findBrowser();
