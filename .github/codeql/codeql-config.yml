@@ -1,0 +1,9 @@
+name: Meeting Cost CodeQL config
+
+# store/design/unpacked is the export from Claude Design: a third-party
+# runtime (support.js) and template documents that scripts/build-site.js and
+# scripts/make-store-assets.js read as inputs. Nothing in it is served or
+# shipped; the published page is the converted site/ and the tiles are
+# rendered PNGs. Scanning it only reports findings we cannot act on.
+paths-ignore:
+  - store/design
