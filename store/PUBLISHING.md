@@ -27,7 +27,7 @@ npm run build
 ```
 
 That runs, in order: core sync, icon generation, syntax/JSON/manifest checks,
-32 unit tests, the headless DOM self-test (28 checks), the packager and the
+34 unit tests, the headless DOM self-test (38 checks), the packager and the
 store validator. The result is:
 
 ```
